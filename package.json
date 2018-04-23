@@ -17,11 +17,12 @@
         
   },
   "dependencies": {
+    "crypto-wallet"         : "git+https://github.com/iaghidro/crypto-wallet.git",
     "async"                 : "2.5.0",
     "big.js"                : "3.1.3",
     "child-process-promise" : "2.2.1",
     "joi"                   : "10.6.0",
-    "moment"                : "2.18.1",
+    "moment"                : "2.19.3",
     "web3"                  : "0.20.3",
     "aws-sdk"               : "2.167.0",
     "lodash"                : "4.17.4",
