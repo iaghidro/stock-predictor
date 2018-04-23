@@ -15,7 +15,7 @@ const {
     util
 } = cryptoWallet;
 
-var app = require('../../../lib');
+var app = require('./../../../lib');
 
 const {
     ModelTrainer

@@ -15,7 +15,7 @@ const {
     Logger
 } = cryptoWallet;
 
-var app = require('../../../../lib');
+var app = require('./../../../../lib');
 const {
     PredictionValidator
 } = app;
