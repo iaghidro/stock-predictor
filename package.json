@@ -1,0 +1,45 @@
+{
+  "name"                    : "stock-predictor",
+  "version"                 : "1.0.0",
+  "author"                  : "Istvan Ghidro",
+  "license"                 : "UNLICENSED",
+  "repository" : { 
+        "type"              : "git",
+        "url"               : "https://github.com/iaghidro/stock-predictor.git"
+  },
+  "contributors"            : [],
+  "scripts": {
+    "test"                  : "mocha --recursive",
+    "testGrep"              : "mocha --recursive -g",
+        
+    "trainModel"            : "node scripts/trainModel.js",
+    "predict"               : "node scripts/predict.js"
+        
+  },
+  "dependencies": {
+    "async"                 : "2.5.0",
+    "big.js"                : "3.1.3",
+    "child-process-promise" : "2.2.1",
+    "joi"                   : "10.6.0",
+    "moment"                : "2.18.1",
+    "web3"                  : "0.20.3",
+    "aws-sdk"               : "2.167.0",
+    "lodash"                : "4.17.4",
+    "request"               : "2.83.0",
+    "create-file"           : "1.0.1",
+    "axios"                 : "0.17.1",
+    "json2csv"              : "3.11.5",
+    "create-file"           : "1.0.1",
+    "axios"                 : "0.17.1",
+    "json2csv"              : "3.11.5",
+    "technicalindicators"   : "1.1.8"
+  },
+  "devDependencies": {
+    "mocha"                 : "3.1.2",
+    "should"                : "11.1.1",
+    "chai"                  : "3.5.0",
+    "sinon"                 : "1.17.6",
+    "sinon-as-promised"     : "4.0.2",
+    "sinon-chai"            : "2.8.0"
+  }
+}
