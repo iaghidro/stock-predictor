@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # INSTALL DEPENDENCIES
-echo "UPDATE/ INSTALL DEPENDENCIES";
-npm update;
+echo "INSTALL DEPENDENCIES";
+npm i;
 
 # RUN UNIT TESTS
 npm test;

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "::start:: KEEP IN SYNC WITH HOST MACHINE'S TIME ";
+/etc/init.d/ntp restart;
+
+#START CRON IN FOREGROUND. THIS WILL KEEP CONTAINER UP AND RUN CRON SERVICES
+cron -f;
