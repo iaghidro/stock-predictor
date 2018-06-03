@@ -1,6 +1,5 @@
 var app = require('../lib');
 const {
-    Exchange,
     config
 } = app;
 

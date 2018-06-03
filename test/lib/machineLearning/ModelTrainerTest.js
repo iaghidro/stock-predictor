@@ -2,6 +2,7 @@ const moment = require('moment');
 var chai = require('chai');
 var sinon = require('sinon');
 var sinonChai = require('sinon-chai');
+var sinonAsPromised = require('sinon-as-promised')(Promise);
 var expect = chai.expect;
 var assert = chai.assert;
 chai.should();
@@ -131,8 +132,8 @@ describe('lib::ModelTrainer', function () {
         });
     });
 
-    describe.skip('trainForSageMaker', function () {
-        const expectedResult = `{"start":"2016-05-29T00:00:00","target":[0.0241,0.0241799]}`;
+    describe('trainForSageMaker', function () {
+        const expectedResult = `{"start":"2016-05-29T00:00:00","target":[3452,456]}`;
 
         it('should convert to sage maker format correctly', function (done) {
             saveJsonLineStub.resolves();
