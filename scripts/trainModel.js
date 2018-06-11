@@ -3,7 +3,7 @@ const {
     config
 } = app;
 
-const dataS3BucketName = process.argv[2]; //first param
+const uploadDataS3BucketName = process.argv[2]; //first param
 
 var trainModel = function () {
     console.log(`@@@@@@@@@ Start! @@@@@@@@@`);
@@ -13,9 +13,9 @@ var trainModel = function () {
         timeDifferenceInMinutes: 30,
         targetLookahead: 4,
         recordsToRemove: 3000,
-        recordsToRemoveTestData: 20,
+        recordsToRemoveTestData: 2,
         trainingName: "ethUsdCoinbase",
-        bucketName: dataS3BucketName,
+        bucketName: uploadDataS3BucketName,
         inputFileName: "historicalData.csv"
     });
     const params = {
