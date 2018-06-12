@@ -1,8 +1,9 @@
 var app = require('../lib');
 const {
-    Exchange,
     config
 } = app;
+
+const uploadDataS3BucketName = process.argv[2]; //first param
 
 var trainModel = function () {
     console.log(`@@@@@@@@@ Start! @@@@@@@@@`);
@@ -12,7 +13,10 @@ var trainModel = function () {
         timeDifferenceInMinutes: 30,
         targetLookahead: 4,
         recordsToRemove: 3000,
-        recordsToRemoveTestData: 20
+        recordsToRemoveTestData: 2,
+        trainingName: "ethUsdCoinbase",
+        bucketName: uploadDataS3BucketName,
+        inputFileName: "historicalData.csv"
     });
     const params = {
         limit: 15000,

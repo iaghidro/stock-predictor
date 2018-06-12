@@ -1,7 +1,6 @@
 var _ = require('lodash');
 var app = require('../lib');
 const {
-    Exchange,
     config
 } = app;
 

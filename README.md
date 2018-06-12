@@ -4,7 +4,10 @@ A NodeJS stock predictor application using AWS ML, and SageMaker.
 
 # Prerequisites:
 
-  Requires NodeJS 7.7.3 +
+* Requires NodeJS 7.7.3 +
+* Must configure AWS to give access to S3, ML, and SageMaker services. This can be done manually or access keys can be passed to the start.sh script
+* Must give AWS ML and Sage Maker access to the S3 upload bucket where the training data will be uploaded 
+
 
 # Create/Train a machine learning model
 
@@ -17,7 +20,7 @@ This script does the following:
 * creates an evaluation
 * creates a prediction endpoint
 
-    npm run trainModel
+    npm run trainModel uploadDataS3BucketName
 
 # Make a prediction
 
