@@ -28,7 +28,7 @@
     "create-file"           : "1.0.1",
     "axios"                 : "0.17.1",
     "json2csv"              : "3.11.5",
-    "technicalindicators"   : "1.1.8"
+    "technicalindicators"   : "1.1.11"
   },
   "devDependencies": {
     "mocha"                 : "3.1.2",
