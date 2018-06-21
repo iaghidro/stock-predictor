@@ -98,7 +98,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
     var slack;
     var errorStub;
     let sandbox;
-
+    
     beforeEach(function (done) {
         sandbox = sinon.sandbox.create();
         tiExtractor = new TechnicalIndicatorExtractor({
