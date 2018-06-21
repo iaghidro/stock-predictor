@@ -75,14 +75,26 @@ describe('lib::AWSML::TechnicalAnalysisExtractor', function () {
             done();
         });
     });
-    describe.skip('getMACDZeroLineCross', function () {
-        it('should calculate average for last three numbers', function (done) {
-            taExtractor.list[1].BBLower = 20;
-            taExtractor.list[1].BBMiddle = 30;
-            taExtractor.list[1].BBUpper = 40;
-            taExtractor.list[1].price_close = 35;
-            const result = taExtractor.getBBCategory();
-            expect(result).to.equal('MID_HIGH');
+    describe('getMACDZeroLineCross', function () {
+        it('should get up if macd crosses from negative above 0', function (done) {
+            taExtractor.list[0].MACD = -0.95334;
+            taExtractor.list[1].MACD = 0.1345;
+            const result = taExtractor.getMACDZeroLineCross();
+            expect(result).to.equal('UP');
+            done();
+        });
+        it('should get down if macd crosses from above 0 below', function (done) {
+            taExtractor.list[0].MACD = 0.1134;
+            taExtractor.list[1].MACD = -0.9435;
+            const result = taExtractor.getMACDZeroLineCross();
+            expect(result).to.equal('DOWN');
+            done();
+        });
+        it('should get none if there is no 0 line cross', function (done) {
+            taExtractor.list[0].MACD = 0.1345;
+            taExtractor.list[1].MACD = 0.2234;
+            const result = taExtractor.getMACDZeroLineCross();
+            expect(result).to.equal('NONE');
             done();
         });
     });
