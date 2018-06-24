@@ -146,7 +146,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": 0
+                "OBV": 0,
+                "RSI": 0
             },
             {
                 "time_period_start": 1510590600,
@@ -163,7 +164,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": -2855.840556
+                "OBV": -2855.840556,
+                "RSI": 0
             },
             {
                 "time_period_start": 1510592400,
@@ -180,7 +182,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": -437.076888
+                "OBV": -437.076888,
+                "RSI": 0
             },
             {
                 "time_period_start": 1510594200,
@@ -197,7 +200,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": 2195.162561
+                "OBV": 2195.162561,
+                "RSI": 0
             },
             {
                 "time_period_start": 1510596000,
@@ -213,7 +217,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": 5600.22932
+                "OBV": 5600.22932,
+                "RSI": 0
             },
             {
                 "time_period_start": 1510597800,
@@ -229,7 +234,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
                 "TDSequential": "NONE",
-                "OBV": 2750.398968
+                "OBV": 2750.398968,
+                "RSI": 0
             }]
 
 
