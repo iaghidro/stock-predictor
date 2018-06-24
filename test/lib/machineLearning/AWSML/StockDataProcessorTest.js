@@ -144,7 +144,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": false,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             },
             {
                 "time_period_start": 1510590600,
@@ -159,7 +160,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": false,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             },
             {
                 "time_period_start": 1510592400,
@@ -174,7 +176,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": false,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             },
             {
                 "time_period_start": 1510594200,
@@ -189,7 +192,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": false,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             },
             {
                 "time_period_start": 1510596000,
@@ -203,7 +207,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": false,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             },
             {
                 "time_period_start": 1510597800,
@@ -217,7 +222,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "isBullish": true,
                 "MACD": 0,
                 "RSICategory": "LOW",
-                "BBCategory": "HIGH_HIGH"
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE"
             }]
 
 
