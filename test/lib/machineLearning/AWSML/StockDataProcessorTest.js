@@ -134,11 +134,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             {
                 "time_period_start": 1510588800,
                 "action": "HOLD",
-                "tenPeriodSMA": "HIGHER",
                 "twentyPeriodSMA": "HIGHER",
-                "thirtyPeriodSMA": "HIGHER",
-                "fiftyPeriodSMA": "HIGHER",
-                "hundredPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
@@ -152,11 +148,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             {
                 "time_period_start": 1510590600,
                 "action": "BUY",
-                "tenPeriodSMA": "LOWER",
                 "twentyPeriodSMA": "LOWER",
-                "thirtyPeriodSMA": "LOWER",
-                "fiftyPeriodSMA": "LOWER",
-                "hundredPeriodSMA": "LOWER",
                 "twoHundredPeriodSMA": "LOWER",
                 "isBearish": false,
                 "isBullish": false,
@@ -170,11 +162,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             {
                 "time_period_start": 1510592400,
                 "action": "BUY",
-                "tenPeriodSMA": "LOWER",
                 "twentyPeriodSMA": "LOWER",
-                "thirtyPeriodSMA": "LOWER",
-                "fiftyPeriodSMA": "LOWER",
-                "hundredPeriodSMA": "LOWER",
                 "twoHundredPeriodSMA": "LOWER",
                 "isBearish": false,
                 "isBullish": false,
@@ -188,11 +176,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             {
                 "time_period_start": 1510594200,
                 "action": "BUY",
-                "tenPeriodSMA": "HIGHER",
                 "twentyPeriodSMA": "HIGHER",
-                "thirtyPeriodSMA": "HIGHER",
-                "fiftyPeriodSMA": "HIGHER",
-                "hundredPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
@@ -205,11 +189,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             },
             {
                 "time_period_start": 1510596000,
-                "tenPeriodSMA": "HIGHER",
                 "twentyPeriodSMA": "HIGHER",
-                "thirtyPeriodSMA": "HIGHER",
-                "fiftyPeriodSMA": "HIGHER",
-                "hundredPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
@@ -222,11 +202,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
             },
             {
                 "time_period_start": 1510597800,
-                "tenPeriodSMA": "HIGHER",
                 "twentyPeriodSMA": "HIGHER",
-                "thirtyPeriodSMA": "HIGHER",
-                "fiftyPeriodSMA": "HIGHER",
-                "hundredPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": true,
@@ -237,6 +213,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "OBV": 2750.398968,
                 "RSI": 0
             }]
+
 
 
         it('should process data correctly', function (done) {
