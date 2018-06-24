@@ -145,7 +145,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": 0
             },
             {
                 "time_period_start": 1510590600,
@@ -161,7 +162,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": -2855.840556
             },
             {
                 "time_period_start": 1510592400,
@@ -177,7 +179,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": -437.076888
             },
             {
                 "time_period_start": 1510594200,
@@ -193,7 +196,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": 2195.162561
             },
             {
                 "time_period_start": 1510596000,
@@ -208,7 +212,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": 5600.22932
             },
             {
                 "time_period_start": 1510597800,
@@ -223,7 +228,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "MACD": 0,
                 "RSICategory": "LOW",
                 "BBCategory": "HIGH_HIGH",
-                "TDSequential": "NONE"
+                "TDSequential": "NONE",
+                "OBV": 2750.398968
             }]
 
 
