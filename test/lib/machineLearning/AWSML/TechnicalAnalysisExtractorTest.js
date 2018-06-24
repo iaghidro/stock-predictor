@@ -98,5 +98,28 @@ describe('lib::AWSML::TechnicalAnalysisExtractor', function () {
             done();
         });
     });
+    describe('getMACDSignalLineCross', function () {
+        it('should get up if histogram crosses from negative above 0', function (done) {
+            taExtractor.list[0].MACDHistogram = -0.95334;
+            taExtractor.list[1].MACDHistogram = 0.1345;
+            const result = taExtractor.getMACDSignalLineCross();
+            expect(result).to.equal('UP');
+            done();
+        });
+        it('should get down if macd histogram crosses from a positive to below 0', function (done) {
+            taExtractor.list[0].MACDHistogram = 0.1134;
+            taExtractor.list[1].MACDHistogram = -0.9435;
+            const result = taExtractor.getMACDSignalLineCross();
+            expect(result).to.equal('DOWN');
+            done();
+        });
+        it('should get none if there is no histogram cross', function (done) {
+            taExtractor.list[0].MACDHistogram = 0.1345;
+            taExtractor.list[1].MACDHistogram = 0.2234;
+            const result = taExtractor.getMACDSignalLineCross();
+            expect(result).to.equal('NONE');
+            done();
+        });
+    });
 
 });
