@@ -98,7 +98,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
     var slack;
     var errorStub;
     let sandbox;
-    
+
     beforeEach(function (done) {
         sandbox = sinon.sandbox.create();
         tiExtractor = new TechnicalIndicatorExtractor({
@@ -161,6 +161,80 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
         it('should calculate average for last three numbers', function (done) {
             const result = tiExtractor.calculateMovingAverage(2, 'price_close');
             expect(result).to.equal(314.33);
+            done();
+        });
+    });
+    describe('getTrend', function () {
+        it('should get DOWN when trend is downward', function (done) {
+            tiExtractor.list[5] = {
+                price_close: 69
+            };
+            tiExtractor.list[6] = {
+                price_close: 59
+            };
+            tiExtractor.list[7] = {
+                price_close: 49
+            };
+            tiExtractor.list[8] = {
+                price_close: 39
+            };
+            tiExtractor.list[9] = {
+                price_close: 19
+            };
+            tiExtractor.list[10] = {
+                price_close: 10
+            };
+            tiExtractor.index = 10;
+            const result = tiExtractor.getTrend(5);
+            expect(result).to.equal("DOWN");
+            done();
+        });
+        it('should get UP when trend is updward', function (done) {
+            tiExtractor.list[0] = {
+                price_close: 4
+            };
+            tiExtractor.list[1] = {
+                price_close: 9
+            };
+            tiExtractor.list[2] = {
+                price_close: 10
+            };
+            tiExtractor.list[3] = {
+                price_close: 15
+            };
+            tiExtractor.list[4] = {
+                price_close: 20
+            };
+            tiExtractor.list[5] = {
+                price_close: 19
+            };
+            tiExtractor.list[6] = {
+                price_close: 30
+            };
+            tiExtractor.list[7] = {
+                price_close: 29
+            };
+            tiExtractor.list[8] = {
+                price_close: 39
+            };
+            tiExtractor.list[9] = {
+                price_close: 45
+            };
+            tiExtractor.list[10] = {
+                price_close: 50
+            };
+            tiExtractor.list[11] = {
+                price_close: 60
+            };
+            tiExtractor.list[12] = {
+                price_close: 65
+            };
+            tiExtractor.list[13] = {
+                price_close: 63
+            };
+            tiExtractor.index = 13;
+            const result = tiExtractor.getTrend(13);
+            expect(result).to.equal("UP");
             done();
         });
     });

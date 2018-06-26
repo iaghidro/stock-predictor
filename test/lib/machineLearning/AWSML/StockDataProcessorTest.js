@@ -215,7 +215,6 @@ describe('lib::AWSML::StockDataProcessor', function () {
             }]
 
 
-
         it('should process data correctly', function (done) {
             stockDataProcessor.process(successfulStockDataResponse)
                     .then((result) => {
