@@ -16,7 +16,8 @@ var trainModel = function () {
         recordsToRemoveTestData: 2,
         trainingName: "ethUsdCoinbase",
         bucketName: uploadDataS3BucketName,
-        inputFileName: "historicalData.csv"
+        inputFileName: "historicalData.csv",
+        propertyFilter: config.propertyFilters.RNN
     });
     const params = {
         limit: 15000,

@@ -19,7 +19,8 @@ var app = require('../../../../lib');
 
 const {
     ModelTrainer,
-    MLDataProcessor
+    MLDataProcessor,
+    config
 } = app;
 
 const successfulStockDataResponse = [{
@@ -102,7 +103,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
         sandbox = sinon.sandbox.create();
         stockDataProcessor = new MLDataProcessor({
             amountChangePercentageThreshold: 0.5,
-            timeDifferenceInMinutes: 1
+            timeDifferenceInMinutes: 1,
+            propertyFilter: config.propertyFilters.AWSML
         });
         stockDataProcessor.calculationDelay = 10;
         slack = sandbox.stub(Slack.prototype, 'postMessage');
