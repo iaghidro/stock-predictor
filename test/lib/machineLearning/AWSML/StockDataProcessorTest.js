@@ -231,6 +231,28 @@ describe('lib::AWSML::StockDataProcessor', function () {
                     })
                     .catch((err) => console.error(err));
         });
+        it('should preprocess time fields', function (done) {
+            stockDataProcessor.propertyFilter.push("year");
+            stockDataProcessor.propertyFilter.push("month");
+            stockDataProcessor.propertyFilter.push("dayOfWeek");
+            stockDataProcessor.propertyFilter.push("hour");
+            stockDataProcessor.propertyFilter.push("minute");
+            stockDataProcessor.propertyFilter.push("second");
+            let stockData = JSON.parse(JSON.stringify(successfulStockDataResponse));
+            stockData[0].time_period_start = "2017-11-13T16:34:21.000Z";
+            stockDataProcessor.process(stockData)
+                    .then((result) => {
+                        const firstFeatureSet = result[0];
+                        expect(firstFeatureSet.year).to.equal(2017);
+                        expect(firstFeatureSet.month).to.equal(10);
+                        expect(firstFeatureSet.dayOfWeek).to.equal(1);
+                        expect(firstFeatureSet.hour).to.equal(16);
+                        expect(firstFeatureSet.minute).to.equal(34);
+                        expect(firstFeatureSet.second).to.equal(21);
+                        done();
+                    })
+                    .catch((err) => console.error(err));
+        });
     });
 
 });
