@@ -104,7 +104,8 @@ describe('lib::AWSML::StockDataProcessor', function () {
         stockDataProcessor = new MLDataProcessor({
             amountChangePercentageThreshold: 0.5,
             timeDifferenceInMinutes: 1,
-            propertyFilter: config.propertyFilters.AWSML
+            propertyFilter: config.featureSet.propertyFilters.AWSML,
+            propertyMapping: config.featureSet.propertyMappings.coinAPI
         });
         stockDataProcessor.calculationDelay = 10;
         slack = sandbox.stub(Slack.prototype, 'postMessage');
@@ -134,7 +135,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
     describe('process', function () {
         const expectedResult = [
             {
-                "time_period_start": 1510588800,
+                "timePeriodStart": 1510588800,
                 "action": "HOLD",
                 "twentyPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
@@ -148,7 +149,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSI": 0
             },
             {
-                "time_period_start": 1510590600,
+                "timePeriodStart": 1510590600,
                 "action": "BUY",
                 "twentyPeriodSMA": "LOWER",
                 "twoHundredPeriodSMA": "LOWER",
@@ -162,7 +163,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSI": 0
             },
             {
-                "time_period_start": 1510592400,
+                "timePeriodStart": 1510592400,
                 "action": "BUY",
                 "twentyPeriodSMA": "LOWER",
                 "twoHundredPeriodSMA": "LOWER",
@@ -176,7 +177,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSI": 0
             },
             {
-                "time_period_start": 1510594200,
+                "timePeriodStart": 1510594200,
                 "action": "BUY",
                 "twentyPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
@@ -190,7 +191,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSI": 0
             },
             {
-                "time_period_start": 1510596000,
+                "timePeriodStart": 1510596000,
                 "twentyPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
@@ -203,7 +204,7 @@ describe('lib::AWSML::StockDataProcessor', function () {
                 "RSI": 0
             },
             {
-                "time_period_start": 1510597800,
+                "timePeriodStart": 1510597800,
                 "twentyPeriodSMA": "HIGHER",
                 "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,

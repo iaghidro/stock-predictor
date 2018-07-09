@@ -24,71 +24,71 @@ const {
 } = app;
 
 const successfulStockDataResponse = [{
-        "time_period_start": "2017-11-13T16:00:00.000Z",
-        "time_period_end": "2017-11-13T16:30:00.000Z",
+        "timePeriodStart": "2017-11-13T16:00:00.000Z",
+        "timePeriodEnd": "2017-11-13T16:30:00.000Z",
         "time_open": "2017-11-13T16:00:01.971Z",
         "time_close": "2017-11-13T16:29:55.033Z",
-        "price_open": 315.01,
-        "price_high": 316.99,
-        "price_low": 315,
-        "price_close": 315.13,
-        "volume_traded": 3610.28335626,
-        "trades_count": 1648
+        "priceOpen": 315.01,
+        "priceHigh": 316.99,
+        "priceLow": 315,
+        "priceClose": 315.13,
+        "volumeTraded": 3610.28335626,
+        "tradesCount": 1648
     }, {
-        "time_period_start": "2017-11-13T16:30:00.000Z",
-        "time_period_end": "2017-11-13T17:00:00.000Z",
+        "timePeriodStart": "2017-11-13T16:30:00.000Z",
+        "timePeriodEnd": "2017-11-13T17:00:00.000Z",
         "time_open": "2017-11-13T16:30:01.247Z",
         "time_close": "2017-11-13T16:59:59.837Z",
-        "price_open": 315.13,
-        "price_high": 315.5,
-        "price_low": 313.35,
-        "price_close": 313.65,
-        "volume_traded": 2855.84055559,
-        "trades_count": 1296
+        "priceOpen": 315.13,
+        "priceHigh": 315.5,
+        "priceLow": 313.35,
+        "priceClose": 313.65,
+        "volumeTraded": 2855.84055559,
+        "tradesCount": 1296
     }, {
-        "time_period_start": "2017-11-13T17:00:00.000Z",
-        "time_period_end": "2017-11-13T17:30:00.000Z",
+        "timePeriodStart": "2017-11-13T17:00:00.000Z",
+        "timePeriodEnd": "2017-11-13T17:30:00.000Z",
         "time_open": "2017-11-13T17:00:00.694Z",
         "time_close": "2017-11-13T17:29:50.908Z",
-        "price_open": 313.64,
-        "price_high": 315.3,
-        "price_low": 312.8,
-        "price_close": 314.21,
-        "volume_traded": 2418.76366768,
-        "trades_count": 1826
+        "priceOpen": 313.64,
+        "priceHigh": 315.3,
+        "priceLow": 312.8,
+        "priceClose": 314.21,
+        "volumeTraded": 2418.76366768,
+        "tradesCount": 1826
     }, {
-        "time_period_start": "2017-11-13T17:30:00.000Z",
-        "time_period_end": "2017-11-13T18:00:00.000Z",
+        "timePeriodStart": "2017-11-13T17:30:00.000Z",
+        "timePeriodEnd": "2017-11-13T18:00:00.000Z",
         "time_open": "2017-11-13T17:30:01.797Z",
         "time_close": "2017-11-13T17:59:59.942Z",
-        "price_open": 314.22,
-        "price_high": 317.5,
-        "price_low": 314.22,
-        "price_close": 314.71,
-        "volume_traded": 2632.23944939,
-        "trades_count": 1297
+        "priceOpen": 314.22,
+        "priceHigh": 317.5,
+        "priceLow": 314.22,
+        "priceClose": 314.71,
+        "volumeTraded": 2632.23944939,
+        "tradesCount": 1297
     }, {
-        "time_period_start": "2017-11-13T18:00:00.000Z",
-        "time_period_end": "2017-11-13T18:30:00.000Z",
+        "timePeriodStart": "2017-11-13T18:00:00.000Z",
+        "timePeriodEnd": "2017-11-13T18:30:00.000Z",
         "time_open": "2017-11-13T18:00:01.964Z",
         "time_close": "2017-11-13T18:29:59.628Z",
-        "price_open": 314.71,
-        "price_high": 315.37,
-        "price_low": 314.28,
-        "price_close": 320.1,
-        "volume_traded": 3405.06675822,
-        "trades_count": 1251
+        "priceOpen": 314.71,
+        "priceHigh": 315.37,
+        "priceLow": 314.28,
+        "priceClose": 320.1,
+        "volumeTraded": 3405.06675822,
+        "tradesCount": 1251
     }, {
-        "time_period_start": "2017-11-13T18:30:00.000Z",
-        "time_period_end": "2017-11-13T19:00:00.000Z",
+        "timePeriodStart": "2017-11-13T18:30:00.000Z",
+        "timePeriodEnd": "2017-11-13T19:00:00.000Z",
         "time_open": "2017-11-13T18:30:00.889Z",
         "time_close": "2017-11-13T18:59:45.498Z",
-        "price_open": 315.09,
-        "price_high": 315.61,
-        "price_low": 314.8,
-        "price_close": 315.6,
-        "volume_traded": 2849.83035141,
-        "trades_count": 868
+        "priceOpen": 315.09,
+        "priceHigh": 315.61,
+        "priceLow": 314.8,
+        "priceClose": 315.6,
+        "volumeTraded": 2849.83035141,
+        "tradesCount": 868
     }];
 
 describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
@@ -128,7 +128,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
     });
     describe('getRangeValues', function () {
         it('should get all previous fields if lookback period goes back to beginning', function (done) {
-            const values = tiExtractor.getRangeValues(2, 'price_close');
+            const values = tiExtractor.getRangeValues(2, 'priceClose');
             const expectedValues = [
                 315.13,
                 313.65,
@@ -138,7 +138,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
             done();
         });
         it('should get all previous fields if lookback period goes back further than beginning', function (done) {
-            const values = tiExtractor.getRangeValues(4, 'price_close');
+            const values = tiExtractor.getRangeValues(4, 'priceClose');
             const expectedValues = [
                 315.13,
                 313.65,
@@ -148,7 +148,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
             done();
         });
         it('should get last two fields', function (done) {
-            const values = tiExtractor.getRangeValues(1, 'price_close');
+            const values = tiExtractor.getRangeValues(1, 'priceClose');
             const expectedValues = [
                 313.65,
                 314.21
@@ -159,7 +159,7 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
     });
     describe('calculateMovingAverage', function () {
         it('should calculate average for last three numbers', function (done) {
-            const result = tiExtractor.calculateMovingAverage(2, 'price_close');
+            const result = tiExtractor.calculateMovingAverage(2, 'priceClose');
             expect(result).to.equal(314.33);
             done();
         });
@@ -167,22 +167,22 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
     describe('getTrend', function () {
         it('should get DOWN when trend is downward', function (done) {
             tiExtractor.list[5] = {
-                price_close: 69
+                priceClose: 69
             };
             tiExtractor.list[6] = {
-                price_close: 59
+                priceClose: 59
             };
             tiExtractor.list[7] = {
-                price_close: 49
+                priceClose: 49
             };
             tiExtractor.list[8] = {
-                price_close: 39
+                priceClose: 39
             };
             tiExtractor.list[9] = {
-                price_close: 19
+                priceClose: 19
             };
             tiExtractor.list[10] = {
-                price_close: 10
+                priceClose: 10
             };
             tiExtractor.index = 10;
             const result = tiExtractor.getTrend(5);
@@ -191,46 +191,46 @@ describe('lib::AWSML::TechnicalIndicatorExtractor', function () {
         });
         it('should get UP when trend is updward', function (done) {
             tiExtractor.list[0] = {
-                price_close: 4
+                priceClose: 4
             };
             tiExtractor.list[1] = {
-                price_close: 9
+                priceClose: 9
             };
             tiExtractor.list[2] = {
-                price_close: 10
+                priceClose: 10
             };
             tiExtractor.list[3] = {
-                price_close: 15
+                priceClose: 15
             };
             tiExtractor.list[4] = {
-                price_close: 20
+                priceClose: 20
             };
             tiExtractor.list[5] = {
-                price_close: 19
+                priceClose: 19
             };
             tiExtractor.list[6] = {
-                price_close: 30
+                priceClose: 30
             };
             tiExtractor.list[7] = {
-                price_close: 29
+                priceClose: 29
             };
             tiExtractor.list[8] = {
-                price_close: 39
+                priceClose: 39
             };
             tiExtractor.list[9] = {
-                price_close: 45
+                priceClose: 45
             };
             tiExtractor.list[10] = {
-                price_close: 50
+                priceClose: 50
             };
             tiExtractor.list[11] = {
-                price_close: 60
+                priceClose: 60
             };
             tiExtractor.list[12] = {
-                price_close: 65
+                priceClose: 65
             };
             tiExtractor.list[13] = {
-                price_close: 63
+                priceClose: 63
             };
             tiExtractor.index = 13;
             const result = tiExtractor.getTrend(13);

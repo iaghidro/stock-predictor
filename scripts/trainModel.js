@@ -17,7 +17,8 @@ var trainModel = function () {
         trainingName: "ethUsdCoinbase",
         bucketName: uploadDataS3BucketName,
         inputFileName: "historicalData.csv",
-        propertyFilter: config.propertyFilters.RNN
+        propertyFilter: config.featureSet.propertyFilters.RNN,
+        propertyMapping: config.featureSet.propertyMappings.coinAPI
     });
     const params = {
         limit: 15000,

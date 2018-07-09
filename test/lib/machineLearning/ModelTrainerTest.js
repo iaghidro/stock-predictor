@@ -24,19 +24,19 @@ const {
 
 const successfulStockDataResponse = [
     {
-        "time_period_start": "2016-05-29T00:00:00.000Z",
-        "price_high": 3452,
+        "timePeriodStart": "2016-05-29T00:00:00.000Z",
+        "priceHigh": 3452,
     },
     {
-        "time_period_start": "2016-05-30T00:00:00.000Z",
-        "price_high": 456,
+        "timePeriodStart": "2016-05-30T00:00:00.000Z",
+        "priceHigh": 456,
     },
     {
-        "time_period_start": "2016-05-31T00:00:00.000Z",
-        "price_high": 346,
+        "timePeriodStart": "2016-05-31T00:00:00.000Z",
+        "priceHigh": 346,
     }, {
-        "time_period_start": "2016-06-01T00:00:00.000Z",
-        "price_high": 785,
+        "timePeriodStart": "2016-06-01T00:00:00.000Z",
+        "priceHigh": 785,
     }];
 
 describe('lib::ModelTrainer', function () {
@@ -101,7 +101,7 @@ describe('lib::ModelTrainer', function () {
 
     describe('trainforML', function () {
         const expectedResult =
-                `"time_period_start","price_high"
+                `"timePeriodStart","priceHigh"
 "2016-05-29T00:00:00.000Z",3452
 "2016-05-30T00:00:00.000Z",456`;
 

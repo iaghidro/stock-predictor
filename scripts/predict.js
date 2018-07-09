@@ -4,13 +4,13 @@ const {
     config
 } = app;
 
-let record =    { time_period_start: 1522776600,
-    price_low: 405.7,
-    price_high: 407.79,
-    volume_traded: 2237.01702728,
-    trades_count: 620,
-    price_open: 405.7,
-    price_close: 407.79,
+let record =    { timePeriodStart: 1522776600,
+    priceLow: 405.7,
+    priceHigh: 407.79,
+    volumeTraded: 2237.01702728,
+    tradesCount: 620,
+    priceOpen: 405.7,
+    priceClose: 407.79,
     action: 'BUY',
     tenPeriodSMA: 404.745455,
     twentyPeriodSMA: 403.18619,
