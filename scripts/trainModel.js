@@ -11,12 +11,14 @@ var trainModel = function () {
     const trainer = new app.ModelTrainer({
         amountChangePercentageThreshold: 0.5,
         timeDifferenceInMinutes: 30,
-        targetLookahead: 4,
-        recordsToRemove: 3000,
+        targetLookahead: 3,
+        recordsToRemove: 200, //todo: use percentBegin in splitting config
         recordsToRemoveTestData: 2,
         trainingName: "ethUsdCoinbase",
         bucketName: uploadDataS3BucketName,
-        inputFileName: "historicalData.csv"
+        inputFileName: "historicalData.csv",
+        propertyFilter: config.featureSet.propertyFilters.RNN,
+        propertyMapping: config.featureSet.propertyMappings.coinAPI
     });
     const params = {
         limit: 15000,

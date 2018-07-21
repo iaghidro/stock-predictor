@@ -19,7 +19,8 @@ var app = require('../../../../lib');
 
 const {
     ModelTrainer,
-    MLDataProcessor
+    MLDataProcessor,
+    config
 } = app;
 
 const successfulStockDataResponse = [{
@@ -102,7 +103,9 @@ describe('lib::AWSML::StockDataProcessor', function () {
         sandbox = sinon.sandbox.create();
         stockDataProcessor = new MLDataProcessor({
             amountChangePercentageThreshold: 0.5,
-            timeDifferenceInMinutes: 1
+            timeDifferenceInMinutes: 1,
+            propertyFilter: config.featureSet.propertyFilters.AWSML,
+            propertyMapping: config.featureSet.propertyMappings.coinAPI
         });
         stockDataProcessor.calculationDelay = 10;
         slack = sandbox.stub(Slack.prototype, 'postMessage');
@@ -132,165 +135,88 @@ describe('lib::AWSML::StockDataProcessor', function () {
     describe('process', function () {
         const expectedResult = [
             {
-                "time_period_start": 1510588800,
-                "price_low": 315,
-                "price_high": 316.99,
-                "volume_traded": 3610.28335626,
-                "trades_count": 1648,
-                "price_open": 315.01,
-                "price_close": 315.13,
+                "timePeriodStart": 1510588800,
                 "action": "HOLD",
-                "tenPeriodSMA": 315.13,
-                "twentyPeriodSMA": 315.13,
-                "thirtyPeriodSMA": 315.13,
-                "fiftyPeriodSMA": 315.13,
-                "hundredPeriodSMA": 315.13,
-                "twoHundredPeriodSMA": 315.13,
+                "twentyPeriodSMA": "HIGHER",
+                "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": 0,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             },
             {
-                "time_period_start": 1510590600,
-                "price_low": 313.35,
-                "price_high": 315.5,
-                "volume_traded": 2855.84055559,
-                "trades_count": 1296,
-                "price_open": 315.13,
-                "price_close": 313.65,
+                "timePeriodStart": 1510590600,
                 "action": "BUY",
-                "tenPeriodSMA": 314.39,
-                "twentyPeriodSMA": 314.39,
-                "thirtyPeriodSMA": 314.39,
-                "fiftyPeriodSMA": 314.39,
-                "hundredPeriodSMA": 314.39,
-                "twoHundredPeriodSMA": 314.39,
+                "twentyPeriodSMA": "LOWER",
+                "twoHundredPeriodSMA": "LOWER",
                 "isBearish": false,
                 "isBullish": false,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": -2855.840556,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             },
             {
-                "time_period_start": 1510592400,
-                "price_low": 312.8,
-                "price_high": 315.3,
-                "volume_traded": 2418.76366768,
-                "trades_count": 1826,
-                "price_open": 313.64,
-                "price_close": 314.21,
+                "timePeriodStart": 1510592400,
                 "action": "BUY",
-                "tenPeriodSMA": 314.33,
-                "twentyPeriodSMA": 314.33,
-                "thirtyPeriodSMA": 314.33,
-                "fiftyPeriodSMA": 314.33,
-                "hundredPeriodSMA": 314.33,
-                "twoHundredPeriodSMA": 314.33,
+                "twentyPeriodSMA": "LOWER",
+                "twoHundredPeriodSMA": "LOWER",
                 "isBearish": false,
                 "isBullish": false,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": -437.076888,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             },
             {
-                "time_period_start": 1510594200,
-                "price_low": 314.22,
-                "price_high": 317.5,
-                "volume_traded": 2632.23944939,
-                "trades_count": 1297,
-                "price_open": 314.22,
-                "price_close": 314.71,
+                "timePeriodStart": 1510594200,
                 "action": "BUY",
-                "tenPeriodSMA": 314.425,
-                "twentyPeriodSMA": 314.425,
-                "thirtyPeriodSMA": 314.425,
-                "fiftyPeriodSMA": 314.425,
-                "hundredPeriodSMA": 314.425,
-                "twoHundredPeriodSMA": 314.425,
+                "twentyPeriodSMA": "HIGHER",
+                "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": 2195.162561,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             },
             {
-                "time_period_start": 1510596000,
-                "price_low": 314.28,
-                "price_high": 315.37,
-                "volume_traded": 3405.06675822,
-                "trades_count": 1251,
-                "price_open": 314.71,
-                "price_close": 320.1,
-                "tenPeriodSMA": 315.56,
-                "twentyPeriodSMA": 315.56,
-                "thirtyPeriodSMA": 315.56,
-                "fiftyPeriodSMA": 315.56,
-                "hundredPeriodSMA": 315.56,
-                "twoHundredPeriodSMA": 315.56,
+                "timePeriodStart": 1510596000,
+                "twentyPeriodSMA": "HIGHER",
+                "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": false,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": 5600.22932,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             },
             {
-                "time_period_start": 1510597800,
-                "price_low": 314.8,
-                "price_high": 315.61,
-                "volume_traded": 2849.83035141,
-                "trades_count": 868,
-                "price_open": 315.09,
-                "price_close": 315.6,
-                "tenPeriodSMA": 315.566667,
-                "twentyPeriodSMA": 315.566667,
-                "thirtyPeriodSMA": 315.566667,
-                "fiftyPeriodSMA": 315.566667,
-                "hundredPeriodSMA": 315.566667,
-                "twoHundredPeriodSMA": 315.566667,
+                "timePeriodStart": 1510597800,
+                "twentyPeriodSMA": "HIGHER",
+                "twoHundredPeriodSMA": "HIGHER",
                 "isBearish": false,
                 "isBullish": true,
                 "MACD": 0,
-                "MACDSignal": 0,
-                "RSI": 0,
+                "RSICategory": "LOW",
+                "BBCategory": "HIGH_HIGH",
+                "TDSequential": "NONE",
                 "OBV": 2750.398968,
-                "BBUpper": 0,
-                "BBLower": 0,
-                "BBMiddle": 0,
-                "isRSIBelow30": true,
-                "isRSIAbove70": false
+                "RSI": 0
             }]
+
 
         it('should process data correctly', function (done) {
             stockDataProcessor.process(successfulStockDataResponse)
@@ -302,6 +228,28 @@ describe('lib::AWSML::StockDataProcessor', function () {
                         console.log('**********')
 
                         expect(JSON.parse(JSON.stringify(result))).to.deep.equal(JSON.parse(JSON.stringify(expectedResult)));
+                        done();
+                    })
+                    .catch((err) => console.error(err));
+        });
+        it('should preprocess time fields', function (done) {
+            stockDataProcessor.propertyFilter.push("year");
+            stockDataProcessor.propertyFilter.push("month");
+            stockDataProcessor.propertyFilter.push("dayOfWeek");
+            stockDataProcessor.propertyFilter.push("hour");
+            stockDataProcessor.propertyFilter.push("minute");
+            stockDataProcessor.propertyFilter.push("second");
+            let stockData = JSON.parse(JSON.stringify(successfulStockDataResponse));
+            stockData[0].time_period_start = "2017-11-13T16:34:21.000Z";
+            stockDataProcessor.process(stockData)
+                    .then((result) => {
+                        const firstFeatureSet = result[0];
+                        expect(firstFeatureSet.year).to.equal(2017);
+                        expect(firstFeatureSet.month).to.equal(10);
+                        expect(firstFeatureSet.dayOfWeek).to.equal(1);
+                        expect(firstFeatureSet.hour).to.equal(16);
+                        expect(firstFeatureSet.minute).to.equal(34);
+                        expect(firstFeatureSet.second).to.equal(21);
                         done();
                     })
                     .catch((err) => console.error(err));
