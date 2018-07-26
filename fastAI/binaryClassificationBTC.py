@@ -3,7 +3,7 @@
 
 # # Structured data
 
-# In[60]:
+# In[12]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,12 +11,13 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[61]:
+# In[13]:
 
 
 from fastai.structured import *
 from fastai.column_data import *
 np.set_printoptions(threshold=50, edgeitems=20)
+from ta import *
 
 PATH='data/stock/'
 
@@ -29,7 +30,7 @@ PATH='data/stock/'
 # * train: Training set provided by competition
 # * test: testing set
 
-# In[62]:
+# In[14]:
 
 
 table_names = ['btc-bitstamp-2012-01-01_to_2018-01-08']
@@ -39,13 +40,13 @@ table_names = ['btc-bitstamp-2012-01-01_to_2018-01-08']
 # 
 # We're going to go ahead and load all of our csv's as dataframes into the list `tables`.
 
-# In[63]:
+# In[15]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[64]:
+# In[16]:
 
 
 from IPython.display import HTML
@@ -56,7 +57,7 @@ from IPython.display import HTML
 # * test: Same as training table, w/o Survived
 # 
 
-# In[65]:
+# In[17]:
 
 
 for t in tables: display(t.head())
@@ -64,7 +65,7 @@ for t in tables: display(t.head())
 
 # The following returns summarized aggregate information to each table accross each field.
 
-# In[66]:
+# In[18]:
 
 
 for t in tables: display(DataFrameSummary(t).summary())
@@ -74,13 +75,13 @@ for t in tables: display(DataFrameSummary(t).summary())
 
 # As a structured data problem, we necessarily have to go through all the cleaning and feature engineering, even though we're using a neural network.
 
-# In[67]:
+# In[19]:
 
 
 train= tables[0]
 
 
-# In[68]:
+# In[20]:
 
 
 len(train)
@@ -88,7 +89,7 @@ len(train)
 
 # Time modifications
 
-# In[69]:
+# In[21]:
 
 
 #convert to date objects
@@ -98,44 +99,19 @@ train['minute'] = train.Timestamp.dt.minute;
 train.head()
 
 
-# In[70]:
-
-
-#shift close prices forward
-train['futureClose'] = train['Close'].shift(-1)
-
-
-# In[71]:
-
-
-#test
-# testTrain = train[-5:]
-# testTrain.apply(getTarget, axis=1)
-# testTrain['action'] = (testTrain['futureClose'] > testTrain['Close'])
-# testTrain = train[-5:]
-# testTrain
-
 # SET DEPENDENT VARIABLE ACTION
-train['action'] = (train['futureClose'] > train['Close'])
+
+# In[22]:
+
+
+lookahead = 15
+train['action'] =  train['Close'].rolling(window=lookahead).max() > train['Close']
 train.action = train.action.astype(int)
 train.head()
 
 
-# convert the prediction variable to type integer
+# In[23]:
 
-# In[72]:
-
-
-train.action = train.action.astype(int)
-
-
-# In[73]:
-
-
-# May need to clean data and handle missing values
-
-# add all date time values
-add_datepart(train, "Timestamp", drop=False)
 
 # edit columns
 
@@ -148,17 +124,22 @@ train.drop('Weighted_Price',1,inplace=True)
 
 # delete unused columns
 train.drop('VolumeCurrency',1,inplace=True)
-train.drop('futureClose',1,inplace=True)
-
-train.reset_index(inplace=True)
 train.head()
 
 
+# In[24]:
+
+
+# trim to a million records for now
+# TODO: remove this
+train = train[-500000:]
+train.reset_index(inplace=True)
+
+
+# In[25]:
+
+
 # remove all 0 values 
-
-# In[74]:
-
-
 train = train[train.Open!=0]
 train = train[train.High!=0]
 train = train[train.Low!=0]
@@ -166,38 +147,49 @@ train = train[train.Close!=0]
 train = train[train.WeightedPrice!=0]
 
 
-# In[75]:
+# In[26]:
 
 
-# trim to a million records for now
-# TODO: remove this
-train = train[-100000:]
-train.reset_index(inplace=True)
+# add technical analysis
+# train = add_all_ta_features(train, "Open", "High", "Low", "Close", "VolumeBTC", fillna=False)
 
 
-# In[76]:
+# In[27]:
+
+
+# add all date time values
+add_datepart(train, "Timestamp", drop=False)
+
+
+# In[28]:
 
 
 train.to_feather(f'{PATH}train')
+
+
+# In[29]:
+
+
+train = pd.read_feather(f'{PATH}train')
+
+
+# In[30]:
+
+
+train
 
 
 # We fill in missing values to avoid complications with `NA`'s. `NA` (not available) is how Pandas indicates missing values; many models have problems when missing values are present, so it's always important to think about how to deal with them. In these cases, we are picking an arbitrary *signal value* that doesn't otherwise appear in the data.
 
 # ## Create features
 
-# In[77]:
+# In[31]:
 
 
-train = pd.read_feather(f'{PATH}train')
+train.head(30).T.head(70)
 
 
-# In[78]:
-
-
-train.head().T.head(40)
-
-
-# In[79]:
+# In[32]:
 
 
 display(DataFrameSummary(train).summary())
@@ -207,7 +199,7 @@ display(DataFrameSummary(train).summary())
 # 
 # This includes converting categorical variables into contiguous integers or one-hot encodings, normalizing continuous features to standard normal, etc...
 
-# In[80]:
+# In[33]:
 
 
 train.head()
@@ -215,7 +207,7 @@ train.head()
 
 # Identify categorical vs continuous variables.  PassengerId serves as the unique identifier for each row.
 
-# In[81]:
+# In[34]:
 
 
 cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek', 'TimestampDayofyear', 
@@ -230,33 +222,33 @@ n = len(train); n
    
 
 
-# In[82]:
+# In[35]:
 
 
 train = train[cat_vars+contin_vars+[dep, index]].copy()
 
 
-# In[83]:
+# In[36]:
 
 
 # test[dep] = 0
 # test = test[cat_vars+contin_vars+[dep, index]].copy()
 
 
-# In[84]:
+# In[37]:
 
 
 for v in cat_vars: train[v] = train[v].astype('category').cat.as_ordered()
 
 
-# In[85]:
+# In[38]:
 
 
 # TODO: need to add this back
 # apply_cats(test, train)
 
 
-# In[86]:
+# In[39]:
 
 
 for v in contin_vars:
@@ -264,7 +256,7 @@ for v in contin_vars:
 #     test[v] = test[v].astype('float32')
 
 
-# In[87]:
+# In[40]:
 
 
 samp_size = n
@@ -274,25 +266,25 @@ n
 
 # We can now process our data...
 
-# In[88]:
+# In[41]:
 
 
 train_samp.head(2)
 
 
-# In[89]:
+# In[42]:
 
 
 df, y, nas, mapper = proc_df(train_samp, dep, do_scale=True)
 
 
-# In[90]:
+# In[43]:
 
 
 y.shape
 
 
-# In[91]:
+# In[44]:
 
 
 # df_test, _, nas, mapper = proc_df(test, dep, do_scale=True, 
@@ -301,7 +293,7 @@ y.shape
 
 # For some reason, nas were found for Fare_log when there was not an NA value and it caused the code to fail downstream.  Here I inspected the value and then just removed the column :)
 
-# In[92]:
+# In[45]:
 
 
 nas
@@ -309,44 +301,43 @@ nas
 # df_test.loc[df_test.Fare_log_na!=True]
 
 
-# In[93]:
+# In[46]:
 
 
 nas={}
 
 
-# In[94]:
+# In[47]:
 
 
 # df_test = df_test.drop(['Fare_log_na'], axis=1)
 
 
-# In[95]:
+# In[48]:
 
 
 df.head(2)
 
 
-# In[96]:
+# In[49]:
 
 
 # df_test.head(2)
 
 
-# Rake the last 10% of rows as our validation set.
+# Rake the last x% of rows as our validation set.
 
-# In[97]:
+# In[50]:
 
 
-
-train_ratio = 0.98
+train_ratio = 0.99
 train_size = int(samp_size * train_ratio); train_size
 val_idx = list(range(train_size, len(df)))
 #val_idx = list(range(0, len(df)-train_size))
 #val_idx = get_cv_idxs(n, val_pct=0.1)
 
 
-# In[98]:
+# In[51]:
 
 
 len(val_idx)
@@ -358,7 +349,7 @@ len(val_idx)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).  Is_multi is set False because there is only one predicted label (Survived) per row (of type int).  
 
-# In[99]:
+# In[52]:
 
 
 md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=64,
@@ -368,13 +359,13 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 
 # Some categorical variables have a lot more levels than others.
 
-# In[100]:
+# In[53]:
 
 
 cat_sz = [(c, len(train_samp[c].cat.categories)+1) for c in cat_vars]
 
 
-# In[101]:
+# In[54]:
 
 
 cat_sz
@@ -382,13 +373,13 @@ cat_sz
 
 # We use the *cardinality* of each variable (that is, its number of unique values) to decide how large to make its *embeddings*. Each level will be associated with a vector with length defined as below.
 
-# In[102]:
+# In[55]:
 
 
 emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 
 
-# In[103]:
+# In[56]:
 
 
 emb_szs
@@ -396,63 +387,63 @@ emb_szs
 
 # Check if cude is available
 
-# In[104]:
+# In[57]:
 
 
 torch.cuda.is_available()
 
 
-# In[105]:
+# In[58]:
 
 
 len(df.columns)-len(cat_vars)
 
 
-# In[106]:
+# In[59]:
 
 
 m = md.get_learner(emb_szs, len(df.columns)-len(cat_vars),0.06, 2, [100,50], [0.03,0.06],None,True)
 
 
-# In[107]:
+# In[60]:
 
 
 m
 
 
-# In[108]:
+# In[61]:
 
 
 m.lr_find()
 m.sched.plot(100)
-lr = 1e-4
+lr = 1e-5
 
 
-# In[109]:
+# In[62]:
 
 
 m.fit(lr, 3)
 
 
-# In[110]:
+# In[63]:
 
 
 m.fit(lr, 5, cycle_len=1)
 
 
-# In[111]:
+# In[64]:
 
 
 m.fit(lr, 3, cycle_len=4, cycle_mult=2 )
 
 
-# In[112]:
+# In[65]:
 
 
 m.save('btcBinaryClassificationModel')
 
 
-# In[113]:
+# In[66]:
 
 
 m.load('btcBinaryClassificationModel')
@@ -460,7 +451,7 @@ m.load('btcBinaryClassificationModel')
 
 # ## Validation
 
-# In[114]:
+# In[67]:
 
 
 (x,y1)=m.predict_with_targs()
@@ -468,30 +459,30 @@ m.load('btcBinaryClassificationModel')
 
 # Predicted vs Validation
 
-# In[115]:
+# In[68]:
 
 
 (np.argmax(x,axis=1),y1)
 
 
-# In[116]:
+# In[69]:
 
 
 y1.shape
 
 
-# In[117]:
+# In[70]:
 
 
 val = train.iloc[val_idx]
 val[[index,dep]]
-valpred = pd.DataFrame({'Timestamp':val.Timestamp, 'action':val.action, 'predicted':np.argmax(x,axis=1)})[['Timestamp', 'action','predicted']]
-valpred.head(10)
+valpred = pd.DataFrame({'Close':val.Close,'Timestamp':val.Timestamp, 'action':val.action, 'predicted':np.argmax(x,axis=1)})[['Close','Timestamp', 'action','predicted']]
+valpred.head(100)
 
 
 # Calculate the percent accuracy
 
-# In[118]:
+# In[71]:
 
 
 predicted = valpred.loc[valpred.action == valpred.predicted]
@@ -501,45 +492,42 @@ accuracy
 
 # ## Test and Kaggle Submission
 
-# In[85]:
+# In[72]:
 
 
-np.argmax(m.predict(True), axis =1)
+# np.argmax(m.predict(True), axis =1)
 
 
-# In[103]:
+# In[73]:
 
 
-sub = pd.DataFrame({'Timestamp':test.index, 'action':np.argmax(m.predict(True), axis =1)})[['Timestamp', 'action']]
-sub.head(10)
+# sub = pd.DataFrame({'Timestamp':test.index, 'action':np.argmax(m.predict(True), axis =1)})[['Timestamp', 'action']]
+# sub.head(10)
 
 
-# In[87]:
+# In[74]:
 
 
-csv_fn=f'{PATH}/tmp/sub4.csv'
-sub.to_csv(csv_fn, index=False)
-FileLink(csv_fn)
+# csv_fn=f'{PATH}/tmp/sub4.csv'
+# sub.to_csv(csv_fn, index=False)
+# FileLink(csv_fn)
 
-
-# ![image.png](attachment:image.png)
-# 
 
 # ## RF
 
-# In[108]:
+# In[75]:
 
 
 from sklearn.ensemble import RandomForestRegressor
 
 
-# In[109]:
+# In[76]:
 
 
 ((val,trn), (y_val,y_trn)) = split_by_idx(val_idx, df.values, y)
 
 
-# In[110]:
+# In[77]:
 
 
 m = RandomForestRegressor(n_estimators=40, max_features=0.99, min_samples_leaf=2,
@@ -549,47 +537,47 @@ m.fit(trn, y_trn);
 
 # Accuracy of 87% on the validation set using a Random Forest Regressor.
 
-# In[139]:
+# In[78]:
 
 
-def PredtoClass(a):
-    pred_class = []
-    for i in range(len(a)):
-        if a[i]<.5:
-            pred_class.append(0)
-        else:
-            pred_class.append(1)
-    return pred_class
-def accuracy(preds, y_val):
-    return  sum(1- abs(PredtoClass(preds) - y_val))/len(y_val)
+# def PredtoClass(a):
+#     pred_class = []
+#     for i in range(len(a)):
+#         if a[i]<.5:
+#             pred_class.append(0)
+#         else:
+#             pred_class.append(1)
+#     return pred_class
+# def accuracy(preds, y_val):
+#     return  sum(1- abs(PredtoClass(preds) - y_val))/len(y_val)
 
 
-# In[141]:
+# In[79]:
 
 
-preds = m.predict(val)
-m.score(trn, y_trn), m.score(val, y_val), m.oob_score_, accuracy(preds, y_val)
+# preds = m.predict(val)
+# m.score(trn, y_trn), m.score(val, y_val), m.oob_score_, accuracy(preds, y_val)
 
 
-# In[142]:
+# In[80]:
 
 
-preds_test = m.predict(df_test.values)
+# preds_test = m.predict(df_test.values)
 
 
-# In[146]:
+# In[81]:
 
 
-sub = pd.DataFrame({'PassengerId':test.index, 'Survived':PredtoClass(preds_test)})[['PassengerId', 'Survived']]
-sub.head(10)
+# sub = pd.DataFrame({'PassengerId':test.index, 'Survived':PredtoClass(preds_test)})[['PassengerId', 'Survived']]
+# sub.head(10)
 
 
-# In[147]:
+# In[82]:
 
 
-csv_fn=f'{PATH}/tmp/RFsub5.csv'
-sub.to_csv(csv_fn, index=False)
-FileLink(csv_fn)
+# csv_fn=f'{PATH}/tmp/RFsub5.csv'
+# sub.to_csv(csv_fn, index=False)
+# FileLink(csv_fn)
 
 
 # This random forest submission also received a score of 0.77033, exactly the same as the nn score, despite the 86.7% validation set accuracy.
