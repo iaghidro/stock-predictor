@@ -1,9 +1,9 @@
 
 # coding: utf-8
 
-# # Structured data
+# # BTC Predictor
 
-# In[1948]:
+# In[48]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,7 +11,7 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[1949]:
+# In[49]:
 
 
 from fastai.structured import *
@@ -30,7 +30,7 @@ PATH='data/stock/'
 # * train: Training set provided by competition
 # * test: testing set
 
-# In[1950]:
+# In[50]:
 
 
 table_names = ['btc-bitstamp-2012-01-01_to_2018-01-08']
@@ -40,13 +40,13 @@ table_names = ['btc-bitstamp-2012-01-01_to_2018-01-08']
 # 
 # We're going to go ahead and load all of our csv's as dataframes into the list `tables`.
 
-# In[1951]:
+# In[ ]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[1952]:
+# In[ ]:
 
 
 from IPython.display import HTML
@@ -57,7 +57,7 @@ from IPython.display import HTML
 # * test: Same as training table, w/o Survived
 # 
 
-# In[1953]:
+# In[ ]:
 
 
 for t in tables: display(t.head())
@@ -65,7 +65,7 @@ for t in tables: display(t.head())
 
 # The following returns summarized aggregate information to each table accross each field.
 
-# In[1954]:
+# In[ ]:
 
 
 # for t in tables: display(DataFrameSummary(t).summary())
@@ -75,13 +75,13 @@ for t in tables: display(t.head())
 
 # As a structured data problem, we necessarily have to go through all the cleaning and feature engineering, even though we're using a neural network.
 
-# In[1955]:
+# In[ ]:
 
 
 train= tables[0]
 
 
-# In[1956]:
+# In[ ]:
 
 
 len(train)
@@ -89,7 +89,7 @@ len(train)
 
 # Time modifications
 
-# In[1957]:
+# In[ ]:
 
 
 #convert to date objects
@@ -101,18 +101,24 @@ train.head()
 
 # SET DEPENDENT VARIABLE ACTION
 
-# In[1958]:
+# In[ ]:
 
 
-lookahead = 120
-percentIncrease = 1.03
+lookahead = 90
+percentIncrease = 1.005
 train['action'] =  train['Close'].rolling(window=lookahead).max() > percentIncrease * train['Close']
+
+# train['action'] = 0;
+# train.loc[train['Close'].rolling(window=lookahead).max() > train['Close'], 'action'] = 1
+# train.loc[train['Close'].rolling(window=lookahead).max() > percentIncrease * train['Close'], 'action'] = 2
+
 train.action = train.action.astype(int)
+
 # target count by category
-len(train[train.action==0]),len(train[train.action==1])
+len(train[train.action==2]),len(train[train.action==1]),len(train[train.action==0])
 
 
-# In[1959]:
+# In[ ]:
 
 
 # edit columns
@@ -128,16 +134,16 @@ train.drop('VolumeCurrency',1,inplace=True)
 train.head()
 
 
-# In[1960]:
+# In[ ]:
 
 
-# trim to a million records for now
+# trim to x records for now
 # TODO: remove this
 train = train.tail(110000)
 len(train)
 
 
-# In[1961]:
+# In[ ]:
 
 
 # remove all 0 values 
@@ -150,18 +156,14 @@ train = train[train.VolumeBTC!=0]
 len(train)
 
 
-# In[1962]:
+# In[ ]:
 
 
 # add technical analysis
 # train = add_all_ta_features(train, "Open", "High", "Low", "Close", "VolumeBTC", fillna=False)
-train['bb_high_indicator'] = bollinger_hband_indicator(train["Close"], n=20, ndev=2, fillna=True)
-
-# Add bollinger band low indicator filling NaN values
-train['bb_low_indicator'] = bollinger_lband_indicator(train["Close"], n=20, ndev=2, fillna=True)
 
 
-# In[1963]:
+# In[ ]:
 
 
 # add all date time values
@@ -173,6 +175,7 @@ add_datepart(train, "Timestamp", drop=False)
 # In[ ]:
 
 
+# todo: make this into a percentage instead of hardcoding the test set
 test = train.tail(10000)
 test.reset_index(inplace=True)
 train = train.head(100000)
@@ -227,7 +230,8 @@ cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 
 'TimestampIs_month_end', 'TimestampIs_month_start', 'TimestampIs_quarter_end', 'TimestampIs_quarter_start', 
 'TimestampIs_year_end', 'TimestampIs_year_start']
 
-contin_vars = ['Open', 'Close','High', 'Low', 'VolumeBTC', 'WeightedPrice', 'TimestampElapsed','bb_high_indicator','bb_low_indicator']
+contin_vars = ['Open', 'Close','High', 'Low', 'VolumeBTC', 'WeightedPrice', 'TimestampElapsed']
+# ,'volume_adi','volume_obv','momentum_rsi'
 
 index='Timestamp'
 dep = 'action'
@@ -252,9 +256,6 @@ train = train[cat_vars+contin_vars+[dep]].copy()
 test = test[cat_vars+contin_vars+[dep]].copy()
 # , index
 
-# test = test.set_index(index)
-# train = train.set_index(index)
-
 
 # In[ ]:
 
@@ -277,26 +278,12 @@ for v in contin_vars:
     test[v] = test[v].astype('float32')
 
 
-# In[ ]:
-
-
-samp_size = n
-# train_samp = train.set_index(index)
-n
-
-
 # We can now process our data...
 
 # In[ ]:
 
 
-train_samp.head(2)
-
-
-# In[ ]:
-
-
-df, y, nas, mapper = proc_df(train_samp, dep, do_scale=True)
+df, y, nas, mapper = proc_df(train, dep, do_scale=True)
 
 
 # In[ ]:
@@ -337,7 +324,7 @@ df_test.head(2)
 
 
 train_ratio = 0.9
-train_size = int(samp_size * train_ratio); train_size
+train_size = int(n * train_ratio); train_size
 val_idx = list(range(train_size, len(df)))
 #val_idx = list(range(0, len(df)-train_size))
 #val_idx = get_cv_idxs(n, val_pct=0.1)
@@ -353,7 +340,7 @@ len(val_idx)
 
 # We're ready to put together our models.
 
-# We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).  Is_multi is set False because there is only one predicted label (Survived) per row (of type int).  
+# We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).  Is_multi is set True because there there are three labels for target BUY,HOLD,SELL
 
 # In[ ]:
 
@@ -367,7 +354,7 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 # In[ ]:
 
 
-cat_sz = [(c, len(train_samp[c].cat.categories)+1) for c in cat_vars]
+cat_sz = [(c, len(train[c].cat.categories)+1) for c in cat_vars]
 
 
 # In[ ]:
@@ -407,7 +394,8 @@ len(df.columns)-len(cat_vars)
 # In[ ]:
 
 
-m = md.get_learner(emb_szs, len(df.columns)-len(cat_vars),0.06, 2, [100,50], [0.03,0.06],None,True)
+dropout = 0.06
+m = md.get_learner(emb_szs, len(df.columns)-len(cat_vars),dropout, 2, [100,50], [0.03,0.06],None,True)
 
 
 # In[ ]:
@@ -490,9 +478,13 @@ valpred.head(10)
 # In[ ]:
 
 
-predicted = valpred.loc[valpred.action == valpred.predicted]
-accuracy = len(predicted)/len(val)
-accuracy
+valSuccessfulPredictions = valpred.loc[valpred.action == valpred.predicted]
+totalAccuracy = len(valSuccessfulPredictions)/len(val)
+
+totalBuyActions = valpred.loc[valpred.action == 1]
+successfulBuyPredictions = valSuccessfulPredictions.loc[valSuccessfulPredictions.action == 1]
+buyAccuracy = len(successfulBuyPredictions)/len(totalBuyActions)
+totalAccuracy,buyAccuracy,len(totalBuyActions),len(successfulBuyPredictions)
 
 
 # ## Test
@@ -506,18 +498,8 @@ np.argmax(m.predict(True), axis =1)
 # In[ ]:
 
 
-testPred = pd.DataFrame({'Timestamp':test.index, 'action':test.action, 'predicted':np.argmax(m.predict(True), axis =1)})[['Timestamp', 'action', 'predicted']]
+testPred = pd.DataFrame({'Timestamp':test.index, 'Close':test.Close, 'action':test.action, 'predicted':np.argmax(m.predict(True), axis =1)})[['Close','Timestamp', 'action', 'predicted']]
 testPred.head(10)
-
-# test_index = list(range(len(test)))
-# testValues = test.iloc[test_index]
-
-# testValues[[dep]]
-
-# len(testValues)
-
-# testPred = pd.DataFrame({'Close':testValues.Close,'index':testValues.index, 'action':testValues.action, 'predicted':np.argmax(x,axis=1)})[['Close','index', 'action','predicted']]
-# testPred.head(100)
 
 
 # Calculate the percent accuracy on the test set
@@ -525,9 +507,12 @@ testPred.head(10)
 # In[ ]:
 
 
-predicted = testPred.loc[testPred.action == testPred.predicted]
-accuracy = len(predicted)/len(val)
-accuracy
+successfulPredictions = testPred.loc[testPred.action == testPred.predicted]
+totalAccuracy = len(successfulPredictions)/len(testPred)
+totalBuyActions = testPred.loc[testPred.action == 1]
+successfulBuyPredictions = successfulPredictions.loc[successfulPredictions.action == 1]
+buyAccuracy = len(successfulBuyPredictions)/len(totalBuyActions)
+totalAccuracy,buyAccuracy,len(totalBuyActions),len(successfulBuyPredictions)
 
 
 # In[ ]:
