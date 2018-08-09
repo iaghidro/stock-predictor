@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[1367]:
+# In[459]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,7 +11,7 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[1368]:
+# In[460]:
 
 
 from fastai.structured import *
@@ -25,7 +25,7 @@ PATH='data/stock/'
 # ## Stock Predictor Lib
 # 
 
-# In[1369]:
+# In[461]:
 
 
 def cleanData(df):
@@ -36,7 +36,7 @@ def cleanData(df):
     return df
 
 
-# In[1370]:
+# In[462]:
 
 
 def calculateAccuracy(df):
@@ -65,18 +65,29 @@ def calculateNetProfit(dataFrame, startAmount):
     totalBuys = 0
     totalSells = 0
     for index, row in df.iterrows():
+        prevBuyAmount = df.buyAmount.get(index -1, np.nan)
+        prevSellAmount = df.sellAmount.get(index -1, np.nan)
+#         prevPredicted = df.predicted.get(index -1, np.nan)
+        predicted = row.predicted
         if index == df.index[0]:
             df.loc[index,'buyAmount'] = startAmount
-        elif row.predicted == 1 and df.loc[index -1,'buyAmount'] > 0:
-            df.loc[index,'sellAmount'] = df.loc[index -1,'buyAmount']/row.Close
+        elif predicted == 1 and prevBuyAmount > 0:
+            # BUY
+            df.loc[index,'sellAmount'] = prevBuyAmount/row.Close
             totalBuys +=1
-        elif row.predicted == 1 and df.loc[index -1,'buyAmount'] == 0:
-            df.loc[index,'sellAmount'] = df.loc[index -1,'sellAmount']
-        elif row.predicted == 0 and df.loc[index -1,'sellAmount'] > 0:
-            df.loc[index,'buyAmount'] = df.loc[index -1,'sellAmount']*row.Close
+        elif predicted == 1 and prevBuyAmount == 0:
+            df.loc[index,'sellAmount'] = prevSellAmount
+        elif predicted == 0 and prevSellAmount > 0:
+            # SELL             
+            df.loc[index,'buyAmount'] = prevSellAmount*row.Close
             totalSells +=1
-        elif row.predicted == 0 and df.loc[index -1,'sellAmount'] == 0:
-            df.loc[index,'buyAmount'] = df.loc[index -1,'buyAmount']
+        elif predicted == 0 and prevSellAmount == 0:
+            df.loc[index,'buyAmount'] = prevBuyAmount
+        else:
+            # HOLD (not holding currently)
+            df.loc[index,'buyAmount'] = prevBuyAmount
+            df.loc[index,'sellAmount'] = prevSellAmount
+        
             
     startClose = df.Close.iloc[0]
     endClose = df.Close.iloc[-1]
@@ -102,11 +113,11 @@ def calculateNetProfit(dataFrame, startAmount):
     return df,result
 
 
-# In[1371]:
+# In[463]:
 
 
 #  use conflateTimeFrame(df, '5T')
-def conflateTime(df, timeFrame):
+def conflateTimeFrame(df, timeFrame):
     ohlc_dict = {                                                                                                             
         'Open':'first',                                                                                                    
         'High':'max',                                                                                                       
@@ -114,24 +125,23 @@ def conflateTime(df, timeFrame):
         'Close': 'last',                                                                                                    
         'Volume': 'sum'
     }
-    df.resample(timeFrame, how=ohlc_dict, closed='left', label='left')
-    return df
+    return df.resample(timeFrame).agg(ohlc_dict)
 
 
 # ## Config
 # 
 
-# In[1372]:
+# In[464]:
 
 
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 100)
 
-lookahead = 30
-percentIncrease = 1.005
-recordsCount = 260000
+lookahead = 25
+percentIncrease = 1.003
+recordsCount = 110000
 testRecordsCount = 10000
-trainRecordsCount = 250000
+trainRecordsCount = 100000
 trainRatio = 0.9
 lr = 1e-3
 dropout = 0.09
@@ -142,25 +152,25 @@ dep = 'action'
 
 # ## Create datasets
 
-# In[1373]:
+# In[465]:
 
 
 table_names = ['btc-bitstamp-2012-01-01_to_2018-01-08']
 
 
-# In[1374]:
+# In[466]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[1375]:
+# In[467]:
 
 
 from IPython.display import HTML
 
 
-# In[1376]:
+# In[468]:
 
 
 for t in tables: display(t.head())
@@ -168,25 +178,25 @@ for t in tables: display(t.head())
 
 # The following returns summarized aggregate information to each table accross each field.
 
-# In[1377]:
+# In[469]:
 
 
 # for t in tables: display(DataFrameSummary(t).summary())
 
 
-# In[1378]:
+# In[470]:
 
 
 train= tables[0]
 
 
-# In[1379]:
+# In[471]:
 
 
 len(train)
 
 
-# In[1380]:
+# In[472]:
 
 
 # trim to x records for now
@@ -196,7 +206,7 @@ train = train.tail(recordsCount)
 len(train)
 
 
-# In[1381]:
+# In[473]:
 
 
 train.reset_index(inplace=True)
@@ -205,13 +215,13 @@ train.to_feather(f'{PATH}train')
 
 # ## Data Cleaning
 
-# In[1382]:
+# In[474]:
 
 
 train = pd.read_feather(f'{PATH}train')
 
 
-# In[1383]:
+# In[475]:
 
 
 #convert to date objects
@@ -221,7 +231,7 @@ train.head()
 
 # SET DEPENDENT VARIABLE ACTION
 
-# In[1384]:
+# In[476]:
 
 
 # edit columns
@@ -233,12 +243,27 @@ train.drop('Volume_(Currency)',1,inplace=True)
 # delete unused columns
 train.drop('VolumeCurrency',1,inplace=True)
 train.drop('Weighted_Price',1,inplace=True)
+
 train.head()
+
+
+# In[477]:
+
+
+# train = conflateTimeFrame(train, '5T')
+# train[index] = train.index
+# train.head()
+
+
+# In[478]:
+
+
+len(train)
 
 
 # ## Feature Engineering
 
-# In[ ]:
+# In[479]:
 
 
 # add technical analysis
@@ -247,7 +272,7 @@ train = cleanData(train)
 len(train)
 
 
-# In[ ]:
+# In[480]:
 
 
 # train['action'] = 0;
@@ -263,7 +288,7 @@ len(train[train.action==2]),len(train[train.action==1]),len(train[train.action==
 
 # Time modifications
 
-# In[ ]:
+# In[481]:
 
 
 # add all date time values
@@ -275,11 +300,11 @@ len(train)
 
 # ## Split validation and test sets
 
-# In[ ]:
+# In[482]:
 
 
-# todo: make this into a percentage instead of hardcoding the test set 
-# todo: create function 
+# # todo: make this into a percentage instead of hardcoding the test set 
+# # todo: create function 
 test = train.tail(testRecordsCount)
 test.reset_index(inplace=True)
 train = train.head(trainRecordsCount)
@@ -287,7 +312,7 @@ train.reset_index(inplace=True)
 len(train),len(test)
 
 
-# In[ ]:
+# In[483]:
 
 
 train.to_feather(f'{PATH}train')
@@ -296,20 +321,20 @@ test.to_feather(f'{PATH}test')
 
 # ## Create features
 
-# In[ ]:
+# In[484]:
 
 
 train = pd.read_feather(f'{PATH}train')
 test = pd.read_feather(f'{PATH}test')
 
 
-# In[ ]:
+# In[485]:
 
 
 train.tail(50).T.head(100)
 
 
-# In[ ]:
+# In[486]:
 
 
 # display(DataFrameSummary(train).summary())
@@ -320,7 +345,7 @@ train.tail(50).T.head(100)
 # 
 # This includes converting categorical variables into contiguous integers or one-hot encodings, normalizing continuous features to standard normal, etc...
 
-# In[ ]:
+# In[487]:
 
 
 train.head()
@@ -328,7 +353,7 @@ train.head()
 
 # Identify categorical vs continuous variables
 
-# In[ ]:
+# In[488]:
 
 
 cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
@@ -362,14 +387,14 @@ train = train.set_index(index)
 len(contin_vars)
 
 
-# In[ ]:
+# In[489]:
 
 
 train = train[cat_vars+contin_vars+[dep]].copy()
 # , index
 
 
-# In[ ]:
+# In[490]:
 
 
 # test[dep] = 0 
@@ -377,21 +402,21 @@ test = test[cat_vars+contin_vars+[dep]].copy()
 # , index
 
 
-# In[ ]:
+# In[491]:
 
 
 for v in cat_vars: train[v] = train[v].astype('category').cat.as_ordered()
 #     todo: maybe change dep variable to category here for multiclass option
 
 
-# In[ ]:
+# In[492]:
 
 
 apply_cats(test, train)
 # test
 
 
-# In[ ]:
+# In[493]:
 
 
 for v in contin_vars:
@@ -401,38 +426,38 @@ for v in contin_vars:
 
 # We can now process our data...
 
-# In[ ]:
+# In[494]:
 
 
 df, y, nas, mapper = proc_df(train, dep, do_scale=True)
 
 
-# In[ ]:
+# In[495]:
 
 
 y.shape
 
 
-# In[ ]:
+# In[496]:
 
 
 df_test, _, nas, mapper = proc_df(test, dep, do_scale=True, mapper=mapper, na_dict=nas)
 train.head(30).T.head(70)
 
 
-# In[ ]:
+# In[497]:
 
 
 nas={}
 
 
-# In[ ]:
+# In[498]:
 
 
 df.head(2)
 
 
-# In[ ]:
+# In[499]:
 
 
 df_test.head(2)
@@ -440,7 +465,7 @@ df_test.head(2)
 
 # Rake the last x% of rows as our validation set.
 
-# In[ ]:
+# In[500]:
 
 
 train_size = int(n * trainRatio); train_size
@@ -449,7 +474,7 @@ val_idx = list(range(train_size, len(df)))
 #val_idx = get_cv_idxs(n, val_pct=0.1)
 
 
-# In[ ]:
+# In[501]:
 
 
 len(val_idx)
@@ -461,7 +486,7 @@ len(val_idx)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).  Is_multi is set True because there there are three labels for target BUY,HOLD,SELL
 
-# In[ ]:
+# In[502]:
 
 
 md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=64,
@@ -470,13 +495,13 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 
 # Some categorical variables have a lot more levels than others.
 
-# In[ ]:
+# In[503]:
 
 
 cat_sz = [(c, len(train[c].cat.categories)+1) for c in cat_vars]
 
 
-# In[ ]:
+# In[504]:
 
 
 cat_sz
@@ -484,13 +509,13 @@ cat_sz
 
 # We use the *cardinality* of each variable (that is, its number of unique values) to decide how large to make its *embeddings*. Each level will be associated with a vector with length defined as below.
 
-# In[ ]:
+# In[505]:
 
 
 emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 
 
-# In[ ]:
+# In[506]:
 
 
 emb_szs
@@ -498,62 +523,62 @@ emb_szs
 
 # Check if cuda is available
 
-# In[ ]:
+# In[507]:
 
 
 torch.cuda.is_available()
 
 
-# In[ ]:
+# In[508]:
 
 
 len(df.columns)-len(cat_vars)
 
 
-# In[ ]:
+# In[509]:
 
 
 m = md.get_learner(emb_szs, len(df.columns)-len(cat_vars),dropout, 2, [100,50], [0.03,0.06],None,True)
 
 
-# In[ ]:
+# In[510]:
 
 
 m
 
 
-# In[ ]:
+# In[511]:
 
 
 m.lr_find()
 m.sched.plot(100)
 
 
-# In[ ]:
+# In[512]:
 
 
 m.fit(lr, 3)
 
 
-# In[ ]:
+# In[513]:
 
 
 m.fit(lr, 5, cycle_len=1)
 
 
-# In[ ]:
+# In[514]:
 
 
 m.fit(lr, 3, cycle_len=4, cycle_mult=2 )
 
 
-# In[ ]:
+# In[515]:
 
 
 m.save(modelName)
 
 
-# In[ ]:
+# In[516]:
 
 
 m.load(modelName)
@@ -561,7 +586,7 @@ m.load(modelName)
 
 # ## Validation
 
-# In[ ]:
+# In[517]:
 
 
 (x,y1)=m.predict_with_targs()
@@ -569,19 +594,19 @@ m.load(modelName)
 
 # Predicted vs Validation
 
-# In[ ]:
+# In[518]:
 
 
 (np.argmax(x,axis=1),y1)
 
 
-# In[ ]:
+# In[519]:
 
 
 y1.shape
 
 
-# In[ ]:
+# In[520]:
 
 
 val = train.iloc[val_idx]
@@ -592,32 +617,32 @@ valpred.tail(100)
 
 # Calculate the percent accuracy on the validation set
 
-# In[ ]:
+# In[521]:
 
 
 calculateAccuracy(valpred)
 
 
-# In[ ]:
+# In[522]:
 
 
 newdf,result = calculateNetProfit(valpred, 10000)
 result
 
 
-# In[ ]:
+# In[523]:
 
 
 newdf.head(10)
 
 
-# In[ ]:
+# In[524]:
 
 
-newdf.plot(x='index', y=['Close'], style='o')
+newdf.plot(x='index', y=['Close', 'buyAmount'], style='o',figsize=(10,5), grid=True)
 
 
-# In[ ]:
+# In[525]:
 
 
 newdf.tail(10)
@@ -625,13 +650,13 @@ newdf.tail(10)
 
 # ## Test
 
-# In[ ]:
+# In[526]:
 
 
 np.argmax(m.predict(True), axis =1)
 
 
-# In[ ]:
+# In[527]:
 
 
 testPred = pd.DataFrame({'Timestamp':test.index, 'Close':test.Close, 'action':test.action, 'predicted':np.argmax(m.predict(True), axis =1)})[['Close','Timestamp', 'action', 'predicted']]
@@ -640,38 +665,38 @@ testPred.head(10)
 
 # Calculate the percent accuracy on the test set
 
-# In[ ]:
+# In[528]:
 
 
 calculateAccuracy(testPred)
 
 
-# In[ ]:
+# In[529]:
 
 
 newdf,result = calculateNetProfit(testPred, 10000)
 result
 
 
-# In[ ]:
+# In[530]:
 
 
 newdf.head(10)
 
 
-# In[ ]:
+# In[531]:
 
 
 newdf.tail(10)
 
 
-# In[ ]:
+# In[532]:
 
 
-newdf.plot(x='Timestamp', y=['Close'], style='o',figsize=(10,5), grid=True)
+newdf.plot(x='Timestamp', y=['Close', 'buyAmount'], style='o',figsize=(10,5), grid=True)
 
 
-# In[ ]:
+# In[533]:
 
 
 # csv_fn=f'{PATH}/tmp/sub4.csv'
@@ -681,19 +706,19 @@ newdf.plot(x='Timestamp', y=['Close'], style='o',figsize=(10,5), grid=True)
 
 # ## Random Forest
 
-# In[ ]:
+# In[534]:
 
 
 from sklearn.ensemble import RandomForestRegressor
 
 
-# In[ ]:
+# In[535]:
 
 
 ((val,trn), (y_val,y_trn)) = split_by_idx(val_idx, df.values, y)
 
 
-# In[ ]:
+# In[536]:
 
 
 m = RandomForestRegressor(n_estimators=40, max_features=0.99, min_samples_leaf=2,
@@ -701,7 +726,7 @@ m = RandomForestRegressor(n_estimators=40, max_features=0.99, min_samples_leaf=2
 m.fit(trn, y_trn);
 
 
-# In[ ]:
+# In[537]:
 
 
 def PredtoClass(a):
@@ -718,27 +743,27 @@ def accuracy(preds, y_val):
 
 # Accuracy on the validation set using a Random Forest Regressor
 
-# In[ ]:
+# In[538]:
 
 
 preds = m.predict(val)
 m.score(trn, y_trn), m.score(val, y_val), m.oob_score_, accuracy(preds, y_val)
 
 
-# In[ ]:
+# In[539]:
 
 
 preds_test = m.predict(df_test.values)
 
 
-# In[ ]:
+# In[540]:
 
 
 sub = pd.DataFrame({'Timestamp':test.index, 'action':PredtoClass(preds_test)})[['Timestamp', 'action']]
 sub.head(10)
 
 
-# In[ ]:
+# In[541]:
 
 
 # csv_fn=f'{PATH}/tmp/RFsub5.csv'
