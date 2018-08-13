@@ -10,3 +10,4 @@
 /**/.pytest_cache/
 /**/stockPredictor/__pycache__/
 /lib/__pycache__/
+/lib/.cache/
