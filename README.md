@@ -32,7 +32,13 @@ This script makes a prediction to the prediction endpoint with the data defined 
 
 1) run tests
 
+NodeJS
+
     npm test
+
+Python (cd into /lib directory then run this command)
+
+    py.test -s
 
 2) grep for tests
 

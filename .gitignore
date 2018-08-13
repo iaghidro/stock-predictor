@@ -7,3 +7,6 @@
 /nohup.out
 .DS_Store
 /ipassign.log
+/**/.pytest_cache/
+/**/stockPredictor/__pycache__/
+/lib/__pycache__/
