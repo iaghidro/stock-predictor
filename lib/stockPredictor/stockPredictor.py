@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 #from fastai.structured import *
 #from fastai.column_data import *
 #np.set_printoptions(threshold=50, edgeitems=20)
@@ -6,21 +8,21 @@
 
 class StockPredictor:
     
-    def __init__(self, config, df):
-        self.config = config
+    def __init__(self, df):
         self.df = df
         
         
-    def split_train_validation(self):
-        self.test = self.df.tail(self.config.testRecordsCount)
-        self.test.reset_index(inplace=True)
-        self.train = self.df.head(self.config.trainRecordsCount)
-        self.train.reset_index(inplace=True)
-        print('Train size: ' + len(self.train) + ' Test size: ' + len(self.test))
+    def split_train_validation(self, testRecordsCount, trainRecordsCount):
+        self.test = self.df.tail(testRecordsCount)
+        self.train = self.df.head(trainRecordsCount)
+#        self.test.reset_index(inplace=True)
+#        self.train.reset_index(inplace=True)
+        print('StockPredictor::split_train_validation:: Train size: ' + str(len(self.train)) + ' Test size: ' + str(len(self.test)))
     
+    def clean_data(self, df):
     #     df = df.dropna()
     #     df = df.replace(np.nan,df.mean())
-    def clean_data(self, df):
         df = df.replace([np.inf, -np.inf], np.nan)
-        df.fillna(method='bfill')
+        df = df.fillna(method='bfill')
         return df
+    
