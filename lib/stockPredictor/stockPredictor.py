@@ -10,18 +10,17 @@ class StockPredictor:
     def __init__(self, df, index):
         self.df = df
         self.index = index        
-        
-    def save_to_feather(self):
-        self.train.reset_index(inplace=True)
-        self.train.to_feather(f'{PATH}train')
+                
+    # ///////////////////////////////
+    # /////// DATA CLEANING /////////
+    # ///////////////////////////////
     
-    def read_from_feather(self):
-        self.train = pd.read_feather(f'{PATH}train')
-        train.drop(self.index,1,inplace=True)
-        
     def sample_train(self, sampleSize):
         self.train = self.df.tail(sampleSize)
         print('StockPredictor::sample_train:: Train size: ' + str(len(self.train)) + ' Original size: ' + str(len(self.df)))
+        
+    def set_date_as_index(self):
+        self.train[self.index] = pd.to_datetime(self.train[self.index], unit='s')
         
     def split_train_validation(self, testRecordsCount, trainRecordsCount):
         self.test = self.df.tail(testRecordsCount)
@@ -39,3 +38,15 @@ class StockPredictor:
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
         self.train = self.train.fillna(method='bfill')
         
+
+    # ///////////////////////////////
+    # /////////// UTIL //////////////
+    # ///////////////////////////////
+    
+    def save_to_feather(self):
+        self.train.reset_index(inplace=True)
+        self.train.to_feather(f'{PATH}train')
+    
+    def read_from_feather(self):
+        self.train = pd.read_feather(f'{PATH}train')
+        train.drop(self.index,1,inplace=True)

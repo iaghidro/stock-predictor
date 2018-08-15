@@ -9,7 +9,8 @@ from stockPredictor import StockPredictor
 
 data = {
     'Close': [1, 25, 6, 34, 6], 
-    'Open': [3, 4, 78, 56, 7]
+    'Open': [3, 4, 78, 56, 7],
+    'Timestamp': [1325317920,1325317980,1325318040,1325318100,1325318160]
 } 
 missingData = {
     'Close': [1, np.nan, 6, 34, 6], 
@@ -46,6 +47,17 @@ def test_sample_train():
     predictor = createPredictor()
     predictor.sample_train(3)
     assert predictor.train.equals(df.tail(3))
+
+def test_set_date_as_index():
+    predictor = createPredictor()
+    predictor.train = predictor.df
+    predictor.set_date_as_index()
+    timeData = {
+        'Timestamp': ['2011-12-31 07:52:00','2011-12-31 07:53:00','2011-12-31 07:54:00','2011-12-31 07:55:00','2011-12-31 07:56:00']
+    }
+    timestamps = pd.DataFrame(data=timeData)
+    timestamps.Timestamp = pd.to_datetime(timestamps.Timestamp)
+    assert predictor.train.Timestamp.equals(timestamps.Timestamp)
     
 def test_clean_train():
     predictor = createPredictor()
