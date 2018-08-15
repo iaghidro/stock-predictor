@@ -21,15 +21,17 @@ backfilledData = {
 }    
 testRecordsCount=2
 trainRecordsCount=3
+index = 'Timestamp'
 
 def createPredictor():
     df = pd.DataFrame(data=data)
-    return StockPredictor(df)
+    return StockPredictor(df, index)
     
 def test_constructor():
     df = pd.DataFrame(data=data)
-    predictor = StockPredictor(df)
+    predictor = createPredictor()
     assert predictor.df.equals(df)
+    assert predictor.index == 'Timestamp'
 
 
 def test_split_train_validation():
@@ -37,11 +39,7 @@ def test_split_train_validation():
     predictor = createPredictor()
     predictor.split_train_validation(testRecordsCount, trainRecordsCount)
     assert predictor.train.equals(df.head(3))
-    assert predictor.test.equals(df.tail(2))
-    
-    
-#def test_add_TA():
-#    predictor.add_TA()
+    assert predictor.test.equals(df.tail(2))    
     
 def test_sample_train():
     df = pd.DataFrame(data=data)
@@ -57,6 +55,15 @@ def test_clean_train():
     expectedDf.Close = expectedDf.Close.astype(float)
     expectedDf.Open = expectedDf.Open.astype(float)
     assert predictor.train.equals(expectedDf)
+    
+    
+def test_save_to_feather():
+    df = pd.DataFrame(data=data)
+    predictor = StockPredictor(df, index)
+    predictor.train = df.tail(3)
+#    predictor.save_to_feather('stockPredictor/')
+#    indexDf = pd.DataFrame(data=[0,1,2])
+#    assert predictor.train.index.equals(indexDf)
     
     
     
