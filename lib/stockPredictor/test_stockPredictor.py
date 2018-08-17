@@ -2,15 +2,16 @@
 #from fastai.column_data import *
 #np.set_printoptions(threshold=50, edgeitems=20)
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from stockPredictor import StockPredictor
 
 data = {
     'Close': [1, 25, 6, 34, 6], 
     'Open': [3, 4, 78, 56, 7],
-    'Timestamp': [1325317920,1325317980,1325318040,1325318100,1325318160]
+    'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160],
+    'action':    [1, 1, 0, 1, 0],
+    'predicted': [0, 1, 0, 1, 1],
 } 
 missingData = {
     'Close': [1, np.nan, 6, 34, 6], 
@@ -20,8 +21,8 @@ backfilledData = {
     'Close': [1, 6, 6, 34, 6], 
     'Open': [78, 78, 78, 56, 7]
 }    
-testRecordsCount=2
-trainRecordsCount=3
+testRecordsCount = 2
+trainRecordsCount = 3
 index = 'Timestamp'
 
 def createPredictor():
@@ -34,6 +35,9 @@ def test_constructor():
     assert predictor.df.equals(df)
     assert predictor.index == 'Timestamp'
 
+# ///////////////////////////////
+# /////// DATA CLEANING /////////
+# ///////////////////////////////
 
 def test_split_train_validation():
     df = pd.DataFrame(data=data)
@@ -53,7 +57,7 @@ def test_set_date_as_index():
     predictor.train = predictor.df
     predictor.set_date_as_index()
     timeData = {
-        'Timestamp': ['2011-12-31 07:52:00','2011-12-31 07:53:00','2011-12-31 07:54:00','2011-12-31 07:55:00','2011-12-31 07:56:00']
+        'Timestamp': ['2011-12-31 07:52:00', '2011-12-31 07:53:00', '2011-12-31 07:54:00', '2011-12-31 07:55:00', '2011-12-31 07:56:00']
     }
     timestamps = pd.DataFrame(data=timeData)
     timestamps.Timestamp = pd.to_datetime(timestamps.Timestamp)
@@ -68,6 +72,28 @@ def test_clean_train():
     expectedDf.Open = expectedDf.Open.astype(float)
     assert predictor.train.equals(expectedDf)
     
+
+# ///////////////////////////////
+# ///////// EVALUATION //////////
+# ///////////////////////////////
+
+def test_calculate_accuracy():
+    df = pd.DataFrame(data=data)
+    predictor = createPredictor()
+    result = predictor.calculate_accuracy(df)
+    expected = {
+        'F1Score': .583,
+        'totalAccuracy': .6,
+        'buyAccuracy': .667,
+        'sellAccuracy': .5,
+        'totalBuyActions': 3,
+        'successfulBuyPredictions': 2
+    }
+    assert result == expected
+    
+# ///////////////////////////////
+# /////////// UTIL //////////////
+# ///////////////////////////////
     
 def test_save_to_feather():
     df = pd.DataFrame(data=data)

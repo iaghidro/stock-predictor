@@ -40,6 +40,31 @@ class StockPredictor:
         
 
     # ///////////////////////////////
+    # ///////// EVALUATION //////////
+    # ///////////////////////////////
+    
+    def calculate_accuracy(self, df):
+        successful_predictions = df.loc[df.action == df.predicted]
+        total_accuracy = len(successful_predictions)/len(df)
+        total_buy_actions = df.loc[df.action == 1]
+        total_sell_actions = df.loc[df.action == 0]
+        successful_buy_predictions = successful_predictions.loc[successful_predictions.action == 1]
+        successful_sell_predictions = successful_predictions.loc[successful_predictions.action == 0]
+        buy_accuracy = len(successful_buy_predictions)/len(total_buy_actions)
+        sell_accuracy = len(successful_sell_predictions)/len(total_sell_actions)
+        f1Score = (buy_accuracy + sell_accuracy)/2;
+        result = {
+            'F1Score': round(f1Score,3),
+            'totalAccuracy': round(total_accuracy,3),
+            'buyAccuracy': round(buy_accuracy,3),
+            'sellAccuracy': round(sell_accuracy,3),
+            'totalBuyActions': len(total_buy_actions),
+            'successfulBuyPredictions': len(successful_buy_predictions)
+        }
+        return result
+            
+
+    # ///////////////////////////////
     # /////////// UTIL //////////////
     # ///////////////////////////////
     
