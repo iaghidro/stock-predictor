@@ -37,7 +37,16 @@ class StockPredictor:
     #     df = df.replace(np.nan,df.mean())
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
         self.train = self.train.fillna(method='bfill')
-        
+                        
+    # ///////////////////////////////
+    # //// FEATURE ENGINEERING //////
+    # ///////////////////////////////
+    
+    """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
+        to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0""" 
+    def set_target(self, lookahead, percentIncrease):
+        self.train['action'] =  self.train['Close'].rolling(window=lookahead).max() > percentIncrease * self.train['Close']
+        self.train.action = self.train.action.astype(int)
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
