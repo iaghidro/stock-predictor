@@ -63,6 +63,56 @@ class StockPredictor:
         }
         return result
             
+    def calculate_net_profit(self, inputDf, startAmount):
+        df = inputDf
+        df['buyAmount'] = 0
+        df['sellAmount'] = 0
+        totalBuys = 0
+        totalSells = 0
+        for index, row in df.iterrows():
+            prevBuyAmount = df.buyAmount.get(index -1, np.nan)
+            prevSellAmount = df.sellAmount.get(index -1, np.nan)
+    #         prevPredicted = df.predicted.get(index -1, np.nan)
+            predicted = row.predicted
+            if index == df.index[0]:
+                df.loc[index,'buyAmount'] = startAmount
+            elif predicted == 1 and prevBuyAmount > 0:
+                # BUY
+                df.loc[index,'sellAmount'] = prevBuyAmount/row.Close
+                totalBuys +=1
+            elif predicted == 1 and prevBuyAmount == 0:
+                df.loc[index,'sellAmount'] = prevSellAmount
+            elif predicted == 0 and prevSellAmount > 0:
+                # SELL             
+                df.loc[index,'buyAmount'] = prevSellAmount*row.Close
+                totalSells +=1
+            elif predicted == 0 and prevSellAmount == 0:
+                df.loc[index,'buyAmount'] = prevBuyAmount
+            else:
+                # HOLD (not holding currently)
+                df.loc[index,'buyAmount'] = prevBuyAmount
+                df.loc[index,'sellAmount'] = prevSellAmount
+                
+        startClose = df.Close.iloc[0]
+        endClose = df.Close.iloc[-1]
+        endBuyAmount = df.buyAmount.iloc[-1]
+        endSellAmount = df.sellAmount.iloc[-1]
+        endAmount = endBuyAmount if (endBuyAmount > 0) else (endSellAmount * endClose)
+        buyAndHoldPercentIncrease = ((endClose - startClose)/startClose) * 100
+        percentIncrease = ((endAmount - startAmount)/startAmount) * 100
+        percentDifference = percentIncrease - buyAndHoldPercentIncrease
+
+        result = {
+            'startClose': startClose,
+            'endClose': endClose,
+            'startAmount': startAmount,
+            'endAmount': endAmount,
+            'buyAndHoldPercentIncrease':round(buyAndHoldPercentIncrease,3),
+            'percentIncrease':round(percentIncrease,3),
+            'percentDifference':round(percentDifference,3),
+            'totalTrades':totalBuys + totalSells
+        }
+        return result
 
     # ///////////////////////////////
     # /////////// UTIL //////////////
@@ -75,3 +125,15 @@ class StockPredictor:
     def read_from_feather(self):
         self.train = pd.read_feather(f'{PATH}train')
         train.drop(self.index,1,inplace=True)
+    
+    """ usage conflateTimeFrame(df, '5T') """
+    def conflate_time_frame(self, df, timeFrame):
+        ohlc_dict = {                                                                                                             
+            'Open':'first',                                                                                                    
+            'High':'max',                                                                                                       
+            'High':'max',                                                                                                       
+            'Low':'min',                                                                                                        
+            'Close': 'last',                                                                                                    
+            'Volume': 'sum'
+        }
+        return df.resample(timeFrame).agg(ohlc_dict)

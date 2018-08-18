@@ -38,7 +38,7 @@ NodeJS
 
 Python (cd into /lib directory then run this command)
 
-    py.test -s
+    py.test -s -vv
 
 2) grep for tests
 

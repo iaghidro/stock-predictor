@@ -7,8 +7,8 @@ import pandas as pd
 from stockPredictor import StockPredictor
 
 data = {
-    'Close': [1, 25, 6, 34, 6], 
-    'Open': [3, 4, 78, 56, 7],
+    'Close': [1, 1.25, 1.5, 2, 2.25], 
+    'Open': [1.1, 1.2, 1.4, 1.8, 2],
     'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160],
     'action':    [1, 1, 0, 1, 0],
     'predicted': [0, 1, 0, 1, 1],
@@ -88,6 +88,23 @@ def test_calculate_accuracy():
         'sellAccuracy': .5,
         'totalBuyActions': 3,
         'successfulBuyPredictions': 2
+    }
+    assert result == expected
+    
+def test_calculate_net_profit():
+    df = pd.DataFrame(data=data)
+    predictor = createPredictor()
+#    df.reset_index(inplace=True)
+    result = predictor.calculate_net_profit(df, 100)
+    expected = {
+        'startClose': 1,
+        'endClose': 2.25,
+        'startAmount': 100,
+        'endAmount': 135,
+        'buyAndHoldPercentIncrease': 125,
+        'percentIncrease':35,
+        'percentDifference': -90,
+        'totalTrades': 3
     }
     assert result == expected
     
