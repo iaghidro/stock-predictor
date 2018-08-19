@@ -45,8 +45,10 @@ class StockPredictor:
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0""" 
     def set_target(self, lookahead, percentIncrease):
-        self.train['action'] =  self.train['Close'].rolling(window=lookahead).max() > percentIncrease * self.train['Close']
+        max_in_lookahead_timeframe = self.train.Close.rolling(window=lookahead,min_periods=1).max().shift(-lookahead)
+        self.train['action'] = max_in_lookahead_timeframe > (percentIncrease * self.train.Close)
         self.train.action = self.train.action.astype(int)
+        print('TESTING')
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////

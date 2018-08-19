@@ -7,7 +7,7 @@ import pandas as pd
 from stockPredictor import StockPredictor
 
 trainData = {
-    'Close': [1, 1.25, 1.5, 2, 2.25], 
+    'Close': [1, 1.004, 1.003, 1.005, 1.4], 
     'Open': [1.1, 1.2, 1.4, 1.8, 2],
     'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160]
 } 
@@ -82,9 +82,16 @@ def test_clean_train():
 # ///////////////////////////////
 
 def test_set_target():
-    df = pd.DataFrame(data=trainData)
-    predictor = StockPredictor(df, index)
-    predictor.train = df.tail(3)
+    predictor = create_predictor(trainData)
+    predictor.train = predictor.df
+    predictor.set_target(2,1.005)
+    action_data = {
+        'action': [0,0,1,0,0]
+    }
+    actions = pd.DataFrame(data=action_data)
+    actions.action = actions.action.astype(int)
+    assert predictor.train.action.equals(actions.action)
+        
     
 # ///////////////////////////////
 # ///////// EVALUATION //////////
@@ -126,9 +133,8 @@ def test_calculate_net_profit():
 # ///////////////////////////////
     
 def test_save_to_feather():
-    df = pd.DataFrame(data=baseData)
-    predictor = StockPredictor(df, index)
-    predictor.train = df.tail(3)
+    predictor = create_predictor(baseData)
+    predictor.train = predictor.df.tail(3)
 #    predictor.save_to_feather('stockPredictor/')
 #    indexDf = pd.DataFrame(data=[0,1,2])
 #    assert predictor.train.index.equals(indexDf)
