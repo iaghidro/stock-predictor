@@ -28,9 +28,6 @@ class StockPredictor:
 #        self.test.reset_index(inplace=True)
 #        self.train.reset_index(inplace=True)
         print('StockPredictor::split_train_validation:: Train size: ' + str(len(self.train)) + ' Test size: ' + str(len(self.test)))    
-
-    def add_ta(self):
-        self.train = add_all_ta_features(self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
         
     def clean_train(self):
     #     df = df.dropna()
@@ -42,11 +39,20 @@ class StockPredictor:
     # //// FEATURE ENGINEERING //////
     # ///////////////////////////////
     
+    def add_ta(self):
+        self.train = add_all_ta_features(self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
+        
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0""" 
     def set_target(self, lookahead, percentIncrease):
-        max_in_lookahead_timeframe = self.train.Close.rolling(window=lookahead,min_periods=1).max().shift(-lookahead)
+#        ,win_type='boxcar'
+        max_in_lookahead_timeframe = self.train.Close \
+                                                .iloc[::-1] \
+                                                .rolling(window=lookahead,min_periods=1) \
+                                                .max() \
+                                                .iloc[::-1]
         self.train['action'] = max_in_lookahead_timeframe > (percentIncrease * self.train.Close)
+#        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
         print('TESTING')
 

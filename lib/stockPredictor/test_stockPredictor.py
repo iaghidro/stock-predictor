@@ -7,7 +7,7 @@ import pandas as pd
 from stockPredictor import StockPredictor
 
 trainData = {
-    'Close': [1, 1.004, 1.003, 1.005, 1.4], 
+    'Close': [1, 1.006, 1.003, 1.005, 1.4], 
     'Open': [1.1, 1.2, 1.4, 1.8, 2],
     'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160]
 } 
@@ -86,7 +86,7 @@ def test_set_target():
     predictor.train = predictor.df
     predictor.set_target(2,1.005)
     action_data = {
-        'action': [0,0,1,0,0]
+        'action': [1,0,0,1,0]
     }
     actions = pd.DataFrame(data=action_data)
     actions.action = actions.action.astype(int)
