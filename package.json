@@ -13,7 +13,9 @@
     "testGrep"              : "mocha --recursive -g",
         
     "trainModel"            : "node scripts/trainModel.js",
-    "predict"               : "node scripts/predict.js"
+    "predict"               : "node scripts/predict.js",
+    
+    "fetch:data"            : "node scripts/fetchData.js"
         
   },
   "dependencies": {
