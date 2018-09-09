@@ -177,3 +177,11 @@ class StockPredictor:
             'Volume': 'sum'
         }
         return df.resample(timeFrame).agg(ohlc_dict)
+
+    def plot_profit(self, df):
+        df.plot(
+            x='Timestamp', 
+            y=['Close', 'buyAmount'], 
+            style='o',
+            figsize=(10,5), 
+            grid=True)

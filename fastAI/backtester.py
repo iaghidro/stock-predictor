@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[331]:
+# In[410]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,19 +11,20 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[332]:
+# In[411]:
 
 
 from fastai.structured import *
 from fastai.column_data import *
 np.set_printoptions(threshold=50, edgeitems=20)
 from ta import *
+from IPython.display import HTML
 
 
 # ## Stock Predictor Lib
 # 
 
-# In[333]:
+# In[412]:
 
 
 import json as js
@@ -202,11 +203,19 @@ class StockPredictor:
         }
         return df.resample(timeFrame).agg(ohlc_dict)
 
+    def plot_profit(self, df):
+        df.plot(
+            x='Timestamp', 
+            y=['Close', 'buyAmount'], 
+            style='o',
+            figsize=(10,5), 
+            grid=True)
+
 
 # ## Config
 # 
 
-# In[334]:
+# In[413]:
 
 
 pd.set_option('display.max_columns', 300)
@@ -222,7 +231,7 @@ PATH='data/stock/'
 
 # ## Create datasets
 
-# In[335]:
+# In[414]:
 
 
 table_names = [
@@ -233,19 +242,13 @@ table_names = [
 ]
 
 
-# In[336]:
+# In[415]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[337]:
-
-
-from IPython.display import HTML
-
-
-# In[338]:
+# In[416]:
 
 
 for t in tables: display(t.head())
@@ -253,26 +256,20 @@ for t in tables: display(t.head())
 
 # The following returns summarized aggregate information to each table accross each field.
 
-# In[339]:
+# In[417]:
 
 
 train= tables[0]
 
 
-# In[340]:
-
-
-len(train)
-
-
-# In[341]:
+# In[418]:
 
 
 p = StockPredictor(train, index)
 p.sample_train(50000)
 
 
-# In[342]:
+# In[419]:
 
 
 p.save_to_feather()
@@ -280,7 +277,7 @@ p.save_to_feather()
 
 # ## Data Cleaning
 
-# In[343]:
+# In[420]:
 
 
 p.read_from_feather()
@@ -288,7 +285,7 @@ p.set_date_as_index()
 # p.set_date_as_index_unix()
 
 
-# In[344]:
+# In[421]:
 
 
 p.normalize_train('volume_traded','price_open','price_high','price_low','price_close',)
@@ -297,13 +294,11 @@ p.train.head(10)
 
 # ## Conflate Time
 
-# In[345]:
+# In[ ]:
 
 
 # train = train.set_index(pd.DatetimeIndex(train[index]))
-# train = conflateTimeFrame(train, '5T')
-# # fix this, should not have to extract Close
-# train = train.Close 
+# p.train = p.conflate_time_frame(p.train, '5T')
 # len(train)
 
 
@@ -313,7 +308,6 @@ p.train.head(10)
 
 
 p.set_target_historical(lookahead, percentIncrease)
-# p.train
 
 
 # In[ ]:
@@ -357,5 +351,5 @@ p.net_profit_df.head(10)
 # In[ ]:
 
 
-p.net_profit_df.plot(x='Timestamp', y=['Close', 'buyAmount'], style='o',figsize=(10,5), grid=True)
+p.plot_profit(p.net_profit_df)
 
