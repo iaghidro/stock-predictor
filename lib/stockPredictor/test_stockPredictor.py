@@ -1,11 +1,17 @@
-#from fastai.structured import *
-#from fastai.column_data import *
+# from fastai.structured import *
+# from fastai.column_data import *
 import numpy as np
 import pandas as pd
 from stockPredictor import StockPredictor
 
 trainData = {
     'Close': [1, 1.006, 1.003, 1.005, 1.4],
+    'Open': [1.1, 1.2, 1.4, 1.8, 2],
+    'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160]
+}
+
+trainDataHold = {
+    'Close': [2, 1.006, 1.003, 1.005, 1.4],
     'Open': [1.1, 1.2, 1.4, 1.8, 2],
     'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160]
 }
@@ -92,6 +98,18 @@ def test_set_target():
     predictor.set_target(2, 1.005)
     action_data = {
         'action': [1, 0, 0, 1, 0]
+    }
+    actions = pd.DataFrame(data=action_data)
+    actions.action = actions.action.astype(int)
+    assert predictor.train.action.equals(actions.action)
+
+
+def test_set_target_historical_hold():
+    predictor = create_predictor(trainDataHold)
+    predictor.train = predictor.df
+    predictor.set_target_historical_hold(2, 1.005)
+    action_data = {
+        'action': [0, 2, 1, 0, 0]
     }
     actions = pd.DataFrame(data=action_data)
     actions.action = actions.action.astype(int)

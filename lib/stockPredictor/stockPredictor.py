@@ -74,6 +74,9 @@ class StockPredictor:
             percentIncrease * self.train.Close)
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
+        buy_count = str(len(self.train[self.train.action == 1]))
+        sell_count = str(len(self.train[self.train.action == 0]))
+        print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
     def set_target_historical(self, lookahead, percentIncrease):
         max_in_lookback_timeframe = self.train.Close.rolling(
@@ -83,8 +86,23 @@ class StockPredictor:
         self.train.action = self.train.action.astype(int)
         buy_count = str(len(self.train[self.train.action == 1]))
         sell_count = str(len(self.train[self.train.action == 0]))
-        print('StockPredictor::set_target_historical:: Buy count: ' +
-              buy_count + ' Sell count: ' + sell_count)
+        print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
+
+    def set_target_historical_hold(self, lookahead, percentIncrease):
+        self.train['action'] = 0
+
+        self.train.loc[self.train['Close'].rolling(
+            window=lookahead).max() > self.train['Close'], 'action'] = 1
+
+        self.train.loc[self.train['Close'].rolling(window=lookahead).max(
+        ) > percentIncrease * self.train['Close'], 'action'] = 2
+
+        self.train.action = self.train.action.astype(int)
+        sell_count = str(len(self.train[self.train.action == 0]))
+        hold_count = str(len(self.train[self.train.action == 1]))
+        buy_count = str(len(self.train[self.train.action == 2]))
+        print('Buy count: ' + buy_count + ' Sell count: ' +
+              sell_count + ' Hold count: ' + hold_count)
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
