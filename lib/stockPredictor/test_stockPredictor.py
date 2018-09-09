@@ -121,7 +121,7 @@ def test_calculate_net_profit():
     df = pd.DataFrame(data=baseData)
     predictor = create_predictor(baseData)
 #    df.reset_index(inplace=True)
-    predictor.calculate_net_profit(df, 100)
+    predictor.calculate_net_profit(df, 100, 0)
     expected = {
         'startClose': 1,
         'endClose': 2.25,

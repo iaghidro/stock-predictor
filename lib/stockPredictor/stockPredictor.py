@@ -111,7 +111,7 @@ class StockPredictor:
         }
         return result
 
-    def calculate_net_profit(self, inputDf, startAmount):
+    def calculate_net_profit(self, inputDf, startAmount, fee):
         df = inputDf
         df['buyAmount'] = 0
         df['sellAmount'] = 0
@@ -120,19 +120,20 @@ class StockPredictor:
         for index, row in df.iterrows():
             prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
             prevSellAmount = df.sellAmount.get(index - 1, np.nan)
-    #         prevPredicted = df.predicted.get(index -1, np.nan)
             predicted = row.predicted
             if index == df.index[0]:
                 df.loc[index, 'buyAmount'] = startAmount
             elif predicted == 1 and prevBuyAmount > 0:
                 # BUY
-                df.loc[index, 'sellAmount'] = prevBuyAmount/row.Close
+                base_sell = prevBuyAmount/row.Close
+                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
                 totalBuys += 1
             elif predicted == 1 and prevBuyAmount == 0:
                 df.loc[index, 'sellAmount'] = prevSellAmount
             elif predicted == 0 and prevSellAmount > 0:
                 # SELL
-                df.loc[index, 'buyAmount'] = prevSellAmount*row.Close
+                base_buy = prevSellAmount*row.Close
+                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
                 totalSells += 1
             elif predicted == 0 and prevSellAmount == 0:
                 df.loc[index, 'buyAmount'] = prevBuyAmount
