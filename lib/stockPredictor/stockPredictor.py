@@ -108,6 +108,29 @@ class StockPredictor:
     # ///////// EVALUATION //////////
     # ///////////////////////////////
 
+    def generate_net_profit_result(self, df, startAmount, totalBuys, totalSells):
+        startClose = df.Close.iloc[0]
+        endClose = df.Close.iloc[-1]
+        endBuyAmount = df.buyAmount.iloc[-1]
+        endSellAmount = df.sellAmount.iloc[-1]
+        endAmount = endBuyAmount if (
+            endBuyAmount > 0) else (endSellAmount * endClose)
+        buyAndHoldPercentIncrease = ((endClose - startClose)/startClose) * 100
+        percentIncrease = ((endAmount - startAmount)/startAmount) * 100
+        percentDifference = percentIncrease - buyAndHoldPercentIncrease
+
+        result = {
+            'startClose': startClose,
+            'endClose': endClose,
+            'startAmount': startAmount,
+            'endAmount': endAmount,
+            'buyAndHoldPercentIncrease': round(buyAndHoldPercentIncrease, 3),
+            'percentIncrease': round(percentIncrease, 3),
+            'percentDifference': round(percentDifference, 3),
+            'totalTrades': totalBuys + totalSells
+        }
+        return result
+
     def calculate_accuracy(self, df):
         successful_predictions = df.loc[df.action == df.predicted]
         total_accuracy = len(successful_predictions)/len(df)
@@ -156,30 +179,48 @@ class StockPredictor:
             elif predicted == 0 and prevSellAmount == 0:
                 df.loc[index, 'buyAmount'] = prevBuyAmount
             else:
-                # HOLD (not holding currently)
+                raise ValueError(
+                    'This is weird, invalid predicted value: ' + str(predicted))
+        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
+        self.net_profit_df = df
+        self.result = result
+        print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+
+    def calculate_net_profit_hold(self, inputDf, startAmount, fee):
+        df = inputDf
+        df['buyAmount'] = 0
+        df['sellAmount'] = 0
+        totalBuys = 0
+        totalSells = 0
+        for index, row in df.iterrows():
+            prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
+            prevSellAmount = df.sellAmount.get(index - 1, np.nan)
+            predicted = row.predicted
+            if index == df.index[0]:
+                df.loc[index, 'buyAmount'] = startAmount
+            elif predicted == 2 and prevBuyAmount > 0:
+                # BUY
+                base_sell = prevBuyAmount / row.Close
+                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
+                totalBuys += 1
+            elif predicted == 2 and prevBuyAmount == 0:
+                df.loc[index, 'sellAmount'] = prevSellAmount
+            elif predicted == 0 and prevSellAmount > 0:
+                # SELL
+                base_buy = prevSellAmount * row.Close
+                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
+                totalSells += 1
+            elif predicted == 0 and prevSellAmount == 0:
+                df.loc[index, 'buyAmount'] = prevBuyAmount
+            elif predicted == 1:
+                # HOLD
                 df.loc[index, 'buyAmount'] = prevBuyAmount
                 df.loc[index, 'sellAmount'] = prevSellAmount
+            else:
+                raise ValueError(
+                    'This is weird, invalid predicted value: ' + str(predicted))
 
-        startClose = df.Close.iloc[0]
-        endClose = df.Close.iloc[-1]
-        endBuyAmount = df.buyAmount.iloc[-1]
-        endSellAmount = df.sellAmount.iloc[-1]
-        endAmount = endBuyAmount if (
-            endBuyAmount > 0) else (endSellAmount * endClose)
-        buyAndHoldPercentIncrease = ((endClose - startClose)/startClose) * 100
-        percentIncrease = ((endAmount - startAmount)/startAmount) * 100
-        percentDifference = percentIncrease - buyAndHoldPercentIncrease
-
-        result = {
-            'startClose': startClose,
-            'endClose': endClose,
-            'startAmount': startAmount,
-            'endAmount': endAmount,
-            'buyAndHoldPercentIncrease': round(buyAndHoldPercentIncrease, 3),
-            'percentIncrease': round(percentIncrease, 3),
-            'percentDifference': round(percentDifference, 3),
-            'totalTrades': totalBuys + totalSells
-        }
+        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
