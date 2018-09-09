@@ -94,7 +94,7 @@ def test_clean_train():
 def test_set_target():
     predictor = create_predictor(trainData)
     predictor.train = predictor.df
-    predictor.set_target(2, 1.005)
+    predictor.set_target('Close', 2, 1.005)
     action_data = {
         'action': [1, 0, 0, 1, 0]
     }
@@ -106,7 +106,7 @@ def test_set_target():
 def test_set_target_historical():
     predictor = create_predictor(trainDataHold)
     predictor.train = predictor.df
-    predictor.set_target_historical(2, 1.005)
+    predictor.set_target_historical('Close', 2, 1.005)
     action_data = {
         'action': [0, 1, 0, 0, 0]
     }
@@ -118,7 +118,7 @@ def test_set_target_historical():
 def test_set_target_historical_hold():
     predictor = create_predictor(trainDataHold)
     predictor.train = predictor.df
-    predictor.set_target_historical_hold(2, 1.005)
+    predictor.set_target_historical_hold('Close', 2, 1.005)
     action_data = {
         'action': [0, 2, 1, 0, 0]
     }

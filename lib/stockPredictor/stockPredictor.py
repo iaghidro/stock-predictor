@@ -63,38 +63,38 @@ class StockPredictor:
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
 
-    def set_target(self, lookahead, percentIncrease):
+    def set_target(self, target, lookahead, percentIncrease):
         #        ,win_type='boxcar'
-        max_in_lookahead_timeframe = self.train.Close \
+        max_in_lookahead_timeframe = self.train[target] \
             .iloc[::-1] \
             .rolling(window=lookahead, min_periods=1) \
             .max() \
             .iloc[::-1]
         self.train['action'] = max_in_lookahead_timeframe > (
-            percentIncrease * self.train.Close)
+            percentIncrease * self.train['Close'])
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
         buy_count = str(len(self.train[self.train.action == 1]))
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical(self, lookahead, percentIncrease):
-        max_in_lookback_timeframe = self.train.Close.rolling(
+    def set_target_historical(self, target, lookahead, percentIncrease):
+        max_in_lookback_timeframe = self.train[target].rolling(
             window=lookahead, min_periods=1).max()
         self.train['action'] = max_in_lookback_timeframe > (
-            percentIncrease * self.train.Close)
+            percentIncrease * self.train['Close'])
         self.train.action = self.train.action.astype(int)
         buy_count = str(len(self.train[self.train.action == 1]))
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical_hold(self, lookahead, percentIncrease):
+    def set_target_historical_hold(self, target, lookahead, percentIncrease):
         self.train['action'] = 0
 
-        self.train.loc[self.train['Close'].rolling(
+        self.train.loc[self.train[target].rolling(
             window=lookahead).max() > self.train['Close'], 'action'] = 1
 
-        self.train.loc[self.train['Close'].rolling(window=lookahead).max(
+        self.train.loc[self.train[target].rolling(window=lookahead).max(
         ) > percentIncrease * self.train['Close'], 'action'] = 2
 
         self.train.action = self.train.action.astype(int)
@@ -181,7 +181,8 @@ class StockPredictor:
             else:
                 raise ValueError(
                     'This is weird, invalid predicted value: ' + str(predicted))
-        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
+        result = self.generate_net_profit_result(
+            df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
@@ -220,7 +221,8 @@ class StockPredictor:
                 raise ValueError(
                     'This is weird, invalid predicted value: ' + str(predicted))
 
-        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
+        result = self.generate_net_profit_result(
+            df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
