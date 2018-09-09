@@ -57,10 +57,10 @@ def test_sample_train():
     predictor.sample_train(3)
     assert predictor.train.equals(df.tail(3))
 
-def test_set_date_as_index():
+def test_set_date_as_index_unix():
     predictor = create_predictor(pd.DataFrame(data=trainData))
     predictor.train = predictor.df
-    predictor.set_date_as_index()
+    predictor.set_date_as_index_unix()
     timeData = {
         'Timestamp': ['2011-12-31 07:52:00', '2011-12-31 07:53:00', '2011-12-31 07:54:00', '2011-12-31 07:55:00', '2011-12-31 07:56:00']
     }
@@ -115,7 +115,7 @@ def test_calculate_net_profit():
     df = pd.DataFrame(data=baseData)
     predictor = create_predictor(baseData)
 #    df.reset_index(inplace=True)
-    result = predictor.calculate_net_profit(df, 100)
+    predictor.calculate_net_profit(df, 100)
     expected = {
         'startClose': 1,
         'endClose': 2.25,
@@ -126,7 +126,7 @@ def test_calculate_net_profit():
         'percentDifference': -90,
         'totalTrades': 3
     }
-    assert result == expected
+    assert predictor.result == expected
     
 # ///////////////////////////////
 # /////////// UTIL //////////////

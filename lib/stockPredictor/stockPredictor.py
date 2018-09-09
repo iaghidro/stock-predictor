@@ -1,3 +1,4 @@
+import json as js
 import numpy as np
 import pandas as pd
 #from fastai.structured import *
@@ -20,6 +21,9 @@ class StockPredictor:
         print('StockPredictor::sample_train:: Train size: ' + str(len(self.train)) + ' Original size: ' + str(len(self.df)))
         
     def set_date_as_index(self):
+        self.train[self.index] = pd.to_datetime(self.train[self.index])
+
+    def set_date_as_index_unix(self):
         self.train[self.index] = pd.to_datetime(self.train[self.index], unit='s')
         
     def split_train_validation(self, testRecordsCount, trainRecordsCount):
@@ -29,6 +33,16 @@ class StockPredictor:
 #        self.train.reset_index(inplace=True)
         print('StockPredictor::split_train_validation:: Train size: ' + str(len(self.train)) + ' Test size: ' + str(len(self.test)))    
         
+    def normalize_train(self, volume, open, high, low, close):
+        self.train = pd.DataFrame({
+            'Timestamp':self.train[self.index],
+            'Volume':self.train[volume],
+            'Open':self.train[open],
+            'High':self.train[high],
+            'Low':self.train[low],
+            'Close':self.train[close]
+        })[['Timestamp','Volume','Open','High','Low','Close']]
+
     def clean_train(self):
     #     df = df.dropna()
     #     df = df.replace(np.nan,df.mean())
@@ -54,8 +68,15 @@ class StockPredictor:
         self.train['action'] = max_in_lookahead_timeframe > (percentIncrease * self.train.Close)
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
-        print('TESTING')
 
+    def set_target_historical(self, lookahead, percentIncrease):
+        max_in_lookback_timeframe = self.train.Close.rolling(window=lookahead,min_periods=1).max()
+        self.train['action'] = max_in_lookback_timeframe > (percentIncrease * self.train.Close)
+        self.train.action = self.train.action.astype(int)
+        buy_count = str(len(self.train[self.train.action==1]))
+        sell_count = str(len(self.train[self.train.action==0]))
+        print('StockPredictor::set_target_historical:: Buy count: ' + buy_count + ' Sell count: ' + sell_count)
+        
     # ///////////////////////////////
     # ///////// EVALUATION //////////
     # ///////////////////////////////
@@ -129,7 +150,9 @@ class StockPredictor:
             'percentDifference':round(percentDifference,3),
             'totalTrades':totalBuys + totalSells
         }
-        return result
+        self.net_profit_df = df
+        self.result = result
+        print(js.dumps(result, sort_keys=False,indent=4, separators=(',', ': ')))
 
     # ///////////////////////////////
     # /////////// UTIL //////////////
@@ -141,7 +164,7 @@ class StockPredictor:
     
     def read_from_feather(self):
         self.train = pd.read_feather(f'{PATH}train')
-        train.drop(self.index,1,inplace=True)
+        # train.drop(self.index,1,inplace=True)
     
     """ usage conflateTimeFrame(df, '5T') """
     def conflate_time_frame(self, df, timeFrame):

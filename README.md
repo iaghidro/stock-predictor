@@ -38,8 +38,8 @@ NodeJS
 
 Python (cd into /lib directory then run this command)
 
-    py.test -s -vv
+    npm run test:p
 
 2) grep for tests
 
-    npm run testGrep 'MyClass'
+    npm run test:grep 'MyClass'
