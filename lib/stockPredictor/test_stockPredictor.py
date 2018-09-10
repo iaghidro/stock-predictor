@@ -53,6 +53,7 @@ def test_constructor():
 def test_split_train_validation():
     df = pd.DataFrame(data=trainData)
     predictor = create_predictor(df)
+    predictor.train = df
     predictor.split_train_validation(testRecordsCount, trainRecordsCount)
     assert predictor.train.equals(df.head(3))
     assert predictor.test.equals(df.tail(2))

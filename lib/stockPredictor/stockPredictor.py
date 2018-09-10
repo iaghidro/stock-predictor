@@ -29,8 +29,8 @@ class StockPredictor:
             self.train[self.index], unit='s')
 
     def split_train_validation(self, testRecordsCount, trainRecordsCount):
-        self.test = self.df.tail(testRecordsCount)
-        self.train = self.df.head(trainRecordsCount)
+        self.test = self.train.tail(testRecordsCount)
+        self.train = self.train.head(trainRecordsCount)
 #        self.test.reset_index(inplace=True)
 #        self.train.reset_index(inplace=True)
         print('Train size: ' + str(len(self.train)) +
@@ -51,6 +51,7 @@ class StockPredictor:
         #     df = df.replace(np.nan,df.mean())
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
         self.train = self.train.fillna(method='bfill')
+        print('Train size: ' + str(len(self.train)))
 
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
@@ -103,6 +104,11 @@ class StockPredictor:
         buy_count = str(len(self.train[self.train.action == 2]))
         print('Buy count: ' + buy_count + ' Sell count: ' +
               sell_count + ' Hold count: ' + hold_count)
+
+    def add_date_values(self):
+        add_datepart(self.train, 'Timestamp', drop=False)
+        self.train['hour'] = self.train['Timestamp'].dt.hour;
+        self.train['minute'] = self.train['Timestamp'].dt.minute;
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
