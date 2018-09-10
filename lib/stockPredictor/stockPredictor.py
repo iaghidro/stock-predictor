@@ -18,8 +18,8 @@ class StockPredictor:
 
     def sample_train(self, sampleSize):
         self.train = self.df.tail(sampleSize)
-        print('StockPredictor::sample_train:: Train size: ' +
-              str(len(self.train)) + ' Original size: ' + str(len(self.df)))
+        print('Train size: ' + str(len(self.train)) +
+              ' Original size: ' + str(len(self.df)))
 
     def set_date_as_index(self):
         self.train[self.index] = pd.to_datetime(self.train[self.index])
@@ -33,8 +33,8 @@ class StockPredictor:
         self.train = self.df.head(trainRecordsCount)
 #        self.test.reset_index(inplace=True)
 #        self.train.reset_index(inplace=True)
-        print('StockPredictor::split_train_validation:: Train size: ' +
-              str(len(self.train)) + ' Test size: ' + str(len(self.test)))
+        print('Train size: ' + str(len(self.train)) +
+              ' Test size: ' + str(len(self.test)))
 
     def normalize_train(self, volume, open, high, low, close):
         self.train = pd.DataFrame({
