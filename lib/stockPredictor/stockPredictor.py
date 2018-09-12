@@ -107,8 +107,8 @@ class StockPredictor:
 
     def add_date_values(self):
         add_datepart(self.train, 'Timestamp', drop=False)
-        self.train['hour'] = self.train['Timestamp'].dt.hour;
-        self.train['minute'] = self.train['Timestamp'].dt.minute;
+        self.train['hour'] = self.train['Timestamp'].dt.hour
+        self.train['minute'] = self.train['Timestamp'].dt.minute
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
@@ -186,7 +186,8 @@ class StockPredictor:
                 df.loc[index, 'buyAmount'] = prevBuyAmount
             else:
                 raise ValueError(
-                    'This is weird, invalid predicted value: ' + str(predicted))
+                    'This is weird, invalid predicted value: ' + str(predicted) + ' prevSellAmount: ' +
+                    str(prevSellAmount) + ' prevBuyAmount: ' + str(prevBuyAmount))
         result = self.generate_net_profit_result(
             df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
