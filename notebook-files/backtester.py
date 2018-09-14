@@ -3,7 +3,7 @@
 
 # # Backtester
 
-# In[466]:
+# In[37]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -14,7 +14,7 @@ get_ipython().run_line_magic('autoreload', '2')
 # ## Stock Predictor Lib
 # 
 
-# In[467]:
+# In[38]:
 
 
 import json as js
@@ -37,8 +37,8 @@ class StockPredictor:
 
     def sample_train(self, sampleSize):
         self.train = self.df.tail(sampleSize)
-        print('StockPredictor::sample_train:: Train size: ' +
-              str(len(self.train)) + ' Original size: ' + str(len(self.df)))
+        print('Train size: ' + str(len(self.train)) +
+              ' Original size: ' + str(len(self.df)))
 
     def set_date_as_index(self):
         self.train[self.index] = pd.to_datetime(self.train[self.index])
@@ -48,12 +48,12 @@ class StockPredictor:
             self.train[self.index], unit='s')
 
     def split_train_validation(self, testRecordsCount, trainRecordsCount):
-        self.test = self.df.tail(testRecordsCount)
-        self.train = self.df.head(trainRecordsCount)
+        self.test = self.train.tail(testRecordsCount)
+        self.train = self.train.head(trainRecordsCount)
 #        self.test.reset_index(inplace=True)
 #        self.train.reset_index(inplace=True)
-        print('StockPredictor::split_train_validation:: Train size: ' +
-              str(len(self.train)) + ' Test size: ' + str(len(self.test)))
+        print('Train size: ' + str(len(self.train)) +
+              ' Test size: ' + str(len(self.test)))
 
     def normalize_train(self, volume, open, high, low, close):
         self.train = pd.DataFrame({
@@ -70,6 +70,7 @@ class StockPredictor:
         #     df = df.replace(np.nan,df.mean())
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
         self.train = self.train.fillna(method='bfill')
+        print('Train size: ' + str(len(self.train)))
 
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
@@ -82,34 +83,34 @@ class StockPredictor:
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
 
-    def set_target(self, lookahead, percentIncrease):
+    def set_target(self, target, lookahead, percentIncrease):
         #        ,win_type='boxcar'
-        max_in_lookahead_timeframe = self.train.Close             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
+        max_in_lookahead_timeframe = self.train[target]             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
         self.train['action'] = max_in_lookahead_timeframe > (
-            percentIncrease * self.train.Close)
+            percentIncrease * self.train['Close'])
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
         buy_count = str(len(self.train[self.train.action == 1]))
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical(self, lookahead, percentIncrease):
-        max_in_lookback_timeframe = self.train.Close.rolling(
+    def set_target_historical(self, target, lookahead, percentIncrease):
+        max_in_lookback_timeframe = self.train[target].rolling(
             window=lookahead, min_periods=1).max()
         self.train['action'] = max_in_lookback_timeframe > (
-            percentIncrease * self.train.Close)
+            percentIncrease * self.train['Close'])
         self.train.action = self.train.action.astype(int)
         buy_count = str(len(self.train[self.train.action == 1]))
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical_hold(self, lookahead, percentIncrease):
+    def set_target_historical_hold(self, target, lookahead, percentIncrease):
         self.train['action'] = 0
 
-        self.train.loc[self.train['Close'].rolling(
+        self.train.loc[self.train[target].rolling(
             window=lookahead).max() > self.train['Close'], 'action'] = 1
 
-        self.train.loc[self.train['Close'].rolling(window=lookahead).max(
+        self.train.loc[self.train[target].rolling(window=lookahead).max(
         ) > percentIncrease * self.train['Close'], 'action'] = 2
 
         self.train.action = self.train.action.astype(int)
@@ -118,6 +119,11 @@ class StockPredictor:
         buy_count = str(len(self.train[self.train.action == 2]))
         print('Buy count: ' + buy_count + ' Sell count: ' +
               sell_count + ' Hold count: ' + hold_count)
+
+    def add_date_values(self):
+        add_datepart(self.train, 'Timestamp', drop=False)
+        self.train['hour'] = self.train['Timestamp'].dt.hour
+        self.train['minute'] = self.train['Timestamp'].dt.minute
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
@@ -195,8 +201,10 @@ class StockPredictor:
                 df.loc[index, 'buyAmount'] = prevBuyAmount
             else:
                 raise ValueError(
-                    'This is weird, invalid predicted value: ' + str(predicted))
-        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
+                    'This is weird, invalid predicted value: ' + str(predicted) + ' prevSellAmount: ' +
+                    str(prevSellAmount) + ' prevBuyAmount: ' + str(prevBuyAmount))
+        result = self.generate_net_profit_result(
+            df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
@@ -235,7 +243,8 @@ class StockPredictor:
                 raise ValueError(
                     'This is weird, invalid predicted value: ' + str(predicted))
 
-        result = self.generate_net_profit_result(df, startAmount, totalBuys, totalSells)
+        result = self.generate_net_profit_result(
+            df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
@@ -272,11 +281,27 @@ class StockPredictor:
             figsize=(10, 5),
             grid=True)
 
+    # def join_df(left, right, left_on, right_on=None, suffix='_y'):
+    #     if right_on is None:
+    #         right_on = left_on
+    #     return left.merge(right, how='left', left_on=left_on, right_on=right_on,
+    #                       suffixes=("", suffix))
+
+
+# In[39]:
+
+
+def join_df(left, right, left_on, right_on=None, suffix='_y'):
+        if right_on is None:
+            right_on = left_on
+        return left.merge(right, how='left', left_on=left_on, right_on=right_on,
+                          suffixes=("", suffix))
+
 
 # ## Config
 # 
 
-# In[468]:
+# In[40]:
 
 
 np.set_printoptions(threshold=50, edgeitems=20)
@@ -285,56 +310,62 @@ pd.set_option('display.max_rows', 300)
 from IPython.display import HTML
 
 
-# In[469]:
+# In[41]:
 
 
-lookahead = 4
-sample_size=60000
+lookahead = 10
+sample_size=100000
 percentIncrease = 1.002
-index='Timestamp'
-# index='time_period_start'
+# index='Timestamp'
+index='time_period_start'
 dep = 'action'
 PATH='data/stock/'
 
 
 # ## Create datasets
 
-# In[470]:
+# In[42]:
 
 
 table_names = [
-        'btc-bitstamp-2012-01-01_to_2018-01-08'
+#         'btc-bitstamp-2012-01-01_to_2018-01-08'
 #     'BTC_COINBASE_2018-07-25_09-06'
 #     'ETH_COINBASE_07-21_08-24'
+#     'COINBASE_BCH_2018-06-15_09-01'
+#     'COINBASE_BTC_2017-11-01_01-09'
+#     'bitstampUSD_1-min_data_2012-01-01_to_2018-06-27',
+#     'coinbaseUSD_1-min_data_2014-12-01_to_2018-06-27'
+    'bitstamp_07-09'
 ]
 
 
-# In[471]:
+# In[43]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[472]:
+# In[44]:
 
 
 for t in tables: display(t.head())
 
 
-# In[473]:
+# In[45]:
 
 
 train= tables[0]
 
 
-# In[474]:
+# In[46]:
 
 
 p = StockPredictor(train, index)
 p.sample_train(sample_size)
+# p.train = p.train.head(100000)
 
 
-# In[475]:
+# In[47]:
 
 
 p.save_to_feather()
@@ -342,31 +373,24 @@ p.save_to_feather()
 
 # ## Data Cleaning
 
-# In[476]:
+# In[48]:
 
 
 p.read_from_feather()
-# p.set_date_as_index()
-p.set_date_as_index_unix()
+p.set_date_as_index()
+# p.set_date_as_index_unix()
 
 
-# In[477]:
+# In[49]:
 
 
-p.normalize_train('Volume_(BTC)','Open','High','Low','Close',)
-# p.normalize_train('volume_traded','price_open','price_high','price_low','price_close',)
-# p.train.head(10)
-
-
-# In[478]:
-
-
-# p.train.tail(10)
+# p.normalize_train('Volume_(BTC)','Open','High','Low','Close')
+p.normalize_train('volume_traded','price_open','price_high','price_low','price_close')
 
 
 # ## Conflate Time
 
-# In[479]:
+# In[50]:
 
 
 # train = train.set_index(pd.DatetimeIndex(train[index]))
@@ -376,22 +400,28 @@ p.normalize_train('Volume_(BTC)','Open','High','Low','Close',)
 
 # ## Set Target
 
-# In[480]:
+# In[51]:
 
 
-p.set_target_historical(lookahead, percentIncrease)
-# p.set_target_historical_hold(lookahead, percentIncrease)
+p.set_target_historical('Close',lookahead, percentIncrease)
+# p.set_target_historical_hold('Close',lookahead, percentIncrease)
 
 
-# In[481]:
+# In[52]:
 
 
 # p.train.head(10)
 
 
+# In[53]:
+
+
+# p.train.tail(10)
+
+
 # ## Validation
 
-# In[482]:
+# In[54]:
 
 
 valpred = pd.DataFrame({
@@ -399,19 +429,46 @@ valpred = pd.DataFrame({
     'Close':p.train.Close,
     'action':p.train.action,
     'predicted':p.train.action
-})[['Timestamp','Close', 'action', 'predicted']]
-# valpred.tail(10)
+})[['Timestamp', 'Close', 'action', 'predicted']] 
 
 
-# In[483]:
+# In[55]:
 
 
-p.calculate_net_profit(valpred, 100, 0)
-# p.calculate_net_profit_hold(valpred, 100, 0)
+# coinbaseDf= tables[1].tail(sample_size)
+# coinbaseDf[index] = pd.to_datetime(coinbaseDf[index], unit='s')
+# coinbaseExtract = pd.DataFrame({
+#     'CoinbaseTimestamp':coinbaseDf.Timestamp,
+#     'Close':coinbaseDf.Close,
+# })[['CoinbaseTimestamp', 'Close']] 
+# # valpred = bitstampExtract.join(coinbaseExtract)
+# valpred = valpred.reset_index(drop=True)
+# coinbaseExtract = coinbaseExtract.reset_index(drop=True)
+# valpred = pd.concat([bitstampExtract, coinbaseExtract], axis=1)
 
-p.net_profit_df.head(10)
-# In[484]:
+
+# In[56]:
+
+
+p.calculate_net_profit(valpred, 1000, 0)
+# p.calculate_net_profit_hold(valpred, 1000, 0)
+
+
+# In[57]:
 
 
 p.plot_profit(p.net_profit_df)
+# train.tail(100)
+
+
+# In[58]:
+
+
+# p.net_profit_df.head(10)
+
+
+# In[59]:
+
+
+# p.net_profit_df.tail(10)
 
