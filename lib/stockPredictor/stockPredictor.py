@@ -57,9 +57,18 @@ class StockPredictor:
     # //// FEATURE ENGINEERING //////
     # ///////////////////////////////
 
+    def get_max_lookback(self, target, lookback):
+        return self.train[target].rolling(
+            window=lookback, min_periods=1).max()
+
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
+        self.train['max5'] = self.get_max_lookback("Close", 5)
+        self.train['max15'] = self.get_max_lookback("Close", 15)
+        self.train['max30'] = self.get_max_lookback("Close", 30)
+        self.train['max60'] = self.get_max_lookback("Close", 60)
+        self.train['max90'] = self.get_max_lookback("Close", 90)
 
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
@@ -79,9 +88,8 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical(self, target, lookahead, percentIncrease):
-        max_in_lookback_timeframe = self.train[target].rolling(
-            window=lookahead, min_periods=1).max()
+    def set_target_historical(self, target, lookback, percentIncrease):
+        max_in_lookback_timeframe = self.get_max_lookback(target, lookback)
         self.train['action'] = max_in_lookback_timeframe > (
             percentIncrease * self.train['Close'])
         self.train.action = self.train.action.astype(int)
@@ -89,14 +97,13 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical_hold(self, target, lookahead, percentIncrease):
+    def set_target_historical_hold(self, target, lookback, percentIncrease):
         self.train['action'] = 0
+        max_lookback = self.get_max_lookback(target, lookback)
+        self.train.loc[max_lookback > self.train['Close'], 'action'] = 1
 
-        self.train.loc[self.train[target].rolling(
-            window=lookahead).max() > self.train['Close'], 'action'] = 1
-
-        self.train.loc[self.train[target].rolling(window=lookahead).max(
-        ) > percentIncrease * self.train['Close'], 'action'] = 2
+        self.train.loc[max_lookback > percentIncrease *
+                       self.train['Close'], 'action'] = 2
 
         self.train.action = self.train.action.astype(int)
         sell_count = str(len(self.train[self.train.action == 0]))
