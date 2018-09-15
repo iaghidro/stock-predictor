@@ -58,17 +58,21 @@ class StockPredictor:
     # ///////////////////////////////
 
     def get_max_lookback(self, target, lookback):
-        return self.train[target].rolling(
-            window=lookback, min_periods=1).max()
+        return self.train[target].rolling(window=lookback, min_periods=1).max()
 
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
-        self.train['max5'] = self.get_max_lookback("Close", 5)
-        self.train['max15'] = self.get_max_lookback("Close", 15)
-        self.train['max30'] = self.get_max_lookback("Close", 30)
-        self.train['max60'] = self.get_max_lookback("Close", 60)
-        self.train['max90'] = self.get_max_lookback("Close", 90)
+        self.train['maxc5'] = self.get_max_lookback("Close", 5)
+        self.train['maxc15'] = self.get_max_lookback("Close", 15)
+        self.train['maxc30'] = self.get_max_lookback("Close", 30)
+        self.train['maxc60'] = self.get_max_lookback("Close", 60)
+        self.train['maxc90'] = self.get_max_lookback("Close", 90)
+        self.train['maxh5'] = self.get_max_lookback("High", 5)
+        self.train['maxh15'] = self.get_max_lookback("High", 15)
+        self.train['maxh30'] = self.get_max_lookback("High", 30)
+        self.train['maxh60'] = self.get_max_lookback("High", 60)
+        self.train['maxh90'] = self.get_max_lookback("High", 90)
 
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
@@ -199,7 +203,7 @@ class StockPredictor:
             df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
-        print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
 
     def calculate_net_profit_hold(self, inputDf, startAmount, fee):
         df = inputDf
@@ -239,7 +243,7 @@ class StockPredictor:
             df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
-        print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
 
     # ///////////////////////////////
     # /////////// UTIL //////////////
