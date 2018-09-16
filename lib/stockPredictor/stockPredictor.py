@@ -79,12 +79,12 @@ class StockPredictor:
 
     def set_target(self, target, lookahead, percentIncrease):
         #        ,win_type='boxcar'
-        max_in_lookahead_timeframe = self.train[target] \
+        max_lookahead = self.train[target] \
             .iloc[::-1] \
             .rolling(window=lookahead, min_periods=1) \
             .max() \
             .iloc[::-1]
-        self.train['action'] = max_in_lookahead_timeframe > (
+        self.train['action'] = max_lookahead > (
             percentIncrease * self.train['Close'])
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
@@ -92,6 +92,29 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
+    def set_target_hold(self, target, lookahead, percentIncrease):
+        self.train['action'] = 0
+        max_lookahead = self.train[target] \
+            .iloc[::-1] \
+            .rolling(window=lookahead, min_periods=1) \
+            .max() \
+            .iloc[::-1]
+        self.train.loc[max_lookahead > self.train['Close'], 'action'] = 1
+
+        self.train.loc[max_lookahead > percentIncrease *
+                       self.train['Close'], 'action'] = 2
+
+        self.train.action = self.train.action.astype(int)
+        sell_count = str(len(self.train[self.train.action == 0]))
+        hold_count = str(len(self.train[self.train.action == 1]))
+        buy_count = str(len(self.train[self.train.action == 2]))
+        print('Buy count: ' + buy_count + ' Sell count: ' +
+              sell_count + ' Hold count: ' + hold_count)
+
+    def add_date_values(self):
+        add_datepart(self.train, 'Timestamp', drop=False)
+        self.train['hour'] = self.train['Timestamp'].dt.hour
+        self.train['minute'] = self.train['Timestamp'].dt.minute
     def set_target_historical(self, target, lookback, percentIncrease):
         max_in_lookback_timeframe = self.get_max_lookback(target, lookback)
         self.train['action'] = max_in_lookback_timeframe > (

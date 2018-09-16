@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[84]:
+# In[514]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,7 +11,7 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[85]:
+# In[515]:
 
 
 from fastai.structured import *
@@ -24,7 +24,7 @@ from IPython.display import HTML
 # ## Stock Predictor Lib
 # 
 
-# In[86]:
+# In[516]:
 
 
 import json as js
@@ -86,17 +86,30 @@ class StockPredictor:
     # //// FEATURE ENGINEERING //////
     # ///////////////////////////////
 
+    def get_max_lookback(self, target, lookback):
+        return self.train[target].rolling(window=lookback, min_periods=1).max()
+
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
+        self.train['maxc5'] = self.get_max_lookback("Close", 5)
+        self.train['maxc15'] = self.get_max_lookback("Close", 15)
+        self.train['maxc30'] = self.get_max_lookback("Close", 30)
+        self.train['maxc60'] = self.get_max_lookback("Close", 60)
+        self.train['maxc90'] = self.get_max_lookback("Close", 90)
+        self.train['maxh5'] = self.get_max_lookback("High", 5)
+        self.train['maxh15'] = self.get_max_lookback("High", 15)
+        self.train['maxh30'] = self.get_max_lookback("High", 30)
+        self.train['maxh60'] = self.get_max_lookback("High", 60)
+        self.train['maxh90'] = self.get_max_lookback("High", 90)
 
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
 
     def set_target(self, target, lookahead, percentIncrease):
         #        ,win_type='boxcar'
-        max_in_lookahead_timeframe = self.train[target]             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
-        self.train['action'] = max_in_lookahead_timeframe > (
+        max_lookahead = self.train[target]             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
+        self.train['action'] = max_lookahead > (
             percentIncrease * self.train['Close'])
 #        self.train['max'] =max_in_lookahead_timeframe
         self.train.action = self.train.action.astype(int)
@@ -104,9 +117,27 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical(self, target, lookahead, percentIncrease):
-        max_in_lookback_timeframe = self.train[target].rolling(
-            window=lookahead, min_periods=1).max()
+    def set_target_hold(self, target, lookahead, percentIncrease):
+        self.train['action'] = 0
+        max_lookahead = self.train[target]             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
+        self.train.loc[max_lookahead > self.train['Close'], 'action'] = 1
+
+        self.train.loc[max_lookahead > percentIncrease *
+                       self.train['Close'], 'action'] = 2
+
+        self.train.action = self.train.action.astype(int)
+        sell_count = str(len(self.train[self.train.action == 0]))
+        hold_count = str(len(self.train[self.train.action == 1]))
+        buy_count = str(len(self.train[self.train.action == 2]))
+        print('Buy count: ' + buy_count + ' Sell count: ' +
+              sell_count + ' Hold count: ' + hold_count)
+
+    def add_date_values(self):
+        add_datepart(self.train, 'Timestamp', drop=False)
+        self.train['hour'] = self.train['Timestamp'].dt.hour
+        self.train['minute'] = self.train['Timestamp'].dt.minute
+    def set_target_historical(self, target, lookback, percentIncrease):
+        max_in_lookback_timeframe = self.get_max_lookback(target, lookback)
         self.train['action'] = max_in_lookback_timeframe > (
             percentIncrease * self.train['Close'])
         self.train.action = self.train.action.astype(int)
@@ -114,14 +145,13 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_historical_hold(self, target, lookahead, percentIncrease):
+    def set_target_historical_hold(self, target, lookback, percentIncrease):
         self.train['action'] = 0
+        max_lookback = self.get_max_lookback(target, lookback)
+        self.train.loc[max_lookback > self.train['Close'], 'action'] = 1
 
-        self.train.loc[self.train[target].rolling(
-            window=lookahead).max() > self.train['Close'], 'action'] = 1
-
-        self.train.loc[self.train[target].rolling(window=lookahead).max(
-        ) > percentIncrease * self.train['Close'], 'action'] = 2
+        self.train.loc[max_lookback > percentIncrease *
+                       self.train['Close'], 'action'] = 2
 
         self.train.action = self.train.action.astype(int)
         sell_count = str(len(self.train[self.train.action == 0]))
@@ -217,7 +247,7 @@ class StockPredictor:
             df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
-#         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
 
     def calculate_net_profit_hold(self, inputDf, startAmount, fee):
         df = inputDf
@@ -257,7 +287,7 @@ class StockPredictor:
             df, startAmount, totalBuys, totalSells)
         self.net_profit_df = df
         self.result = result
-#         print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
 
     # ///////////////////////////////
     # /////////// UTIL //////////////
@@ -285,7 +315,7 @@ class StockPredictor:
 
     def plot_profit(self, df):
         df.plot(
-            x='index',
+            x='Timestamp',
             y=['Close', 'buyAmount'],
             style='o',
             figsize=(10, 5),
@@ -295,7 +325,7 @@ class StockPredictor:
 # ## Config
 # 
 
-# In[87]:
+# In[517]:
 
 
 pd.set_option('display.max_columns', 100)
@@ -303,12 +333,12 @@ pd.set_option('display.max_rows', 100)
 
 index='Timestamp'
 # index='time_period_start'
-lookahead = 25
-percentIncrease = 1.005
-recordsCount = 50000
-testRecordsCount = 10000
-trainRecordsCount = 40000
-trainRatio = 0.90
+lookahead = 10
+percentIncrease = 1.002
+recordsCount = 110000
+testRecordsCount = 5000
+trainRecordsCount = 105000
+trainRatio = 0.9
 lr = 1e-4
 dropout = 0.06
 modelName = 'btcBinaryClassificationModel'
@@ -318,42 +348,44 @@ PATH='data/stock/'
 
 # ## Create datasets
 
-# In[88]:
+# In[518]:
 
 
 table_names = [
-    'btc-bitstamp-2012-01-01_to_2018-01-08'
+    'coinbaseUSD_1-min_data_2014-12-01_to_2018-06-27',
+#     'bitstampUSD_1-min_data_2012-01-01_to_2018-06-27',
+#     'btc-bitstamp-2012-01-01_to_2018-01-08'
 #         'BTC_COINBASE_2018-07-25_09-06'
 #         'ETH_COINBASE_07-21_08-24'
 ]
 
 
-# In[89]:
+# In[519]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[90]:
+# In[520]:
 
 
 for t in tables: display(t.head())
 
 
-# In[91]:
+# In[521]:
 
 
 train= tables[0]
 
 
-# In[92]:
+# In[522]:
 
 
 p = StockPredictor(train, index)
 p.sample_train(recordsCount)
 
 
-# In[93]:
+# In[523]:
 
 
 p.save_to_feather()
@@ -361,23 +393,39 @@ p.save_to_feather()
 
 # ## Data Cleaning
 
-# In[94]:
+# In[524]:
 
 
 p.read_from_feather()
 p.set_date_as_index_unix()
 
 
-# In[95]:
+# In[525]:
 
 
 p.normalize_train('Volume_(BTC)','Open','High','Low','Close')
 p.train.head()
 
 
-# In[96]:
+# ## Join Bitstamp
+
+# In[526]:
 
 
+# bitstamp= tables[1].tail(recordsCount)
+# bitstamp[index] = pd.to_datetime(bitstamp[index], unit='s')
+# bitstampExtract = pd.DataFrame({
+#     'BitstampTimestamp':bitstamp.Timestamp,
+#     'BitstampClose':bitstamp.Close,
+# })[[ 'BitstampTimestamp','BitstampClose']] 
+# bitstampExtract = bitstampExtract.reset_index(drop=True)
+# p.train = pd.concat([bitstampExtract, p.train], axis=1)
+
+
+# In[527]:
+
+
+# valpred = valpred.reset_index(drop=True)
 # train = train.set_index(pd.DatetimeIndex(train[index]))
 # p.train = p.conflate_time_frame(p.train, '5T')
 # len(train)
@@ -385,7 +433,13 @@ p.train.head()
 
 # ## Feature Engineering
 
-# In[97]:
+# In[528]:
+
+
+p.set_target('Close',lookahead, percentIncrease)
+
+
+# In[529]:
 
 
 # add technical analysis
@@ -393,13 +447,7 @@ p.add_ta()
 p.clean_train()
 
 
-# In[98]:
-
-
-p.set_target('Close',lookahead, percentIncrease)
-
-
-# In[99]:
+# In[530]:
 
 
 p.add_date_values()
@@ -407,28 +455,19 @@ p.add_date_values()
 
 # ## Split validation and test sets
 
-# In[100]:
+# In[531]:
 
 
 p.split_train_validation(testRecordsCount, trainRecordsCount)
-# p.test.reset_index(inplace=True)
-# p.train.reset_index(inplace=True)
 
 
-# In[101]:
-
-
-# p.train.to_feather(f'{PATH}train')
-# p.test.to_feather(f'{PATH}test')
-
-
-# In[102]:
+# In[532]:
 
 
 p.train.head()
 
 
-# In[103]:
+# In[533]:
 
 
 p.train.tail(50).T.head(100)
@@ -436,32 +475,31 @@ p.train.tail(50).T.head(100)
 
 # ## Create features
 
-# In[104]:
-
-
-# p.train = pd.read_feather(f'{PATH}train')
-# p.test = pd.read_feather(f'{PATH}test')
-
-
 # Identify categorical vs continuous variables
 
-# In[105]:
+# In[534]:
 
 
 cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
 'TimestampDayofyear','TimestampIs_month_end', 'TimestampIs_month_start', 'TimestampIs_quarter_end',
 'TimestampIs_quarter_start','TimestampIs_year_end', 'TimestampIs_year_start']
 
+# 'BitstampClose',
 contin_vars = ['Open', 'Close','High', 'Low', 'Volume', 'TimestampElapsed',
 'volume_adi','volume_obv','volume_obvm','volume_cmf','volume_fi','volume_em','volume_vpt','volume_nvi',
-'volatility_atr','volatility_bbh','volatility_bbl','volatility_bbm','volatility_bbhi','volatility_bbli',
+'volatility_atr','volatility_bbh','volatility_bbl','volatility_bbm',
+               'volatility_bbhi',
+               'volatility_bbli',
 'volatility_kcc','volatility_kch','volatility_kcl','volatility_kchi','volatility_kcli','volatility_dch',
-'volatility_dcl','volatility_dchi','volatility_dcli','trend_macd','trend_macd_signal','trend_macd_diff',
+'volatility_dcl','volatility_dchi',
+               'volatility_dcli',
+               'trend_macd','trend_macd_signal','trend_macd_diff',
 'trend_ema_fast','trend_ema_slow','trend_adx','trend_adx_pos','trend_adx_neg','trend_adx_ind','trend_vortex_ind_pos',
 'trend_vortex_ind_neg','trend_vortex_diff','trend_trix','trend_mass_index','trend_cci','trend_dpo','trend_kst',
-'trend_kst_sig','trend_kst_diff','trend_ichimoku_a','trend_ichimoku_b','momentum_rsi','momentum_mfi','momentum_tsi',
-'momentum_uo','momentum_stoch','momentum_stoch_signal','momentum_wr','momentum_ao']
-# 'others_dr','others_cr'
+'trend_kst_sig','trend_kst_diff','trend_ichimoku_a','trend_ichimoku_b'
+,'trend_aroon_up','trend_aroon_down','trend_aroon_ind','momentum_rsi','momentum_mfi','momentum_tsi',
+'momentum_uo','momentum_stoch','momentum_stoch_signal','momentum_wr','momentum_ao','others_dr','others_dlr','others_cr'
+,'maxc5','maxc15','maxc30','maxc60','maxc90','maxh5','maxh15','maxh30','maxh60','maxh90']
 
 
 n = len(p.train); n
@@ -469,17 +507,17 @@ n = len(p.train); n
 p.test = p.test.set_index('Timestamp')
 p.train = p.train.set_index('Timestamp')
 
-len(contin_vars)
+len(contin_vars),len(contin_vars) -5
 
 
-# In[106]:
+# In[535]:
 
 
 p.train = p.train[cat_vars+contin_vars+[dep]].copy()
 # , index
 
 
-# In[107]:
+# In[536]:
 
 
 # test[dep] = 0 
@@ -487,21 +525,21 @@ p.test = p.test[cat_vars+contin_vars+[dep]].copy()
 # , index
 
 
-# In[108]:
+# In[537]:
 
 
 for v in cat_vars: p.train[v] = p.train[v].astype('category').cat.as_ordered()
 #     todo: maybe change dep variable to category here for multiclass option
 
 
-# In[109]:
+# In[538]:
 
 
 apply_cats(p.test, p.train)
 # test
 
 
-# In[110]:
+# In[539]:
 
 
 for v in contin_vars:
@@ -509,32 +547,32 @@ for v in contin_vars:
     p.test[v] = p.test[v].astype('float32')
 
 
-# In[111]:
+# In[540]:
 
 
 df, y, nas, mapper = proc_df(p.train, dep, do_scale=True)
 
 
-# In[112]:
+# In[541]:
 
 
 df_test, _, nas, mapper = proc_df(p.test, dep, do_scale=True, mapper=mapper, na_dict=nas)
 p.train.head(30).T.head(70)
 
 
-# In[113]:
+# In[542]:
 
 
 nas={}
 
 
-# In[114]:
+# In[543]:
 
 
 df.head(2)
 
 
-# In[115]:
+# In[544]:
 
 
 df_test.head(2)
@@ -542,7 +580,7 @@ df_test.head(2)
 
 # Rake the last x% of rows as our validation set.
 
-# In[116]:
+# In[545]:
 
 
 train_size = int(n * trainRatio); train_size
@@ -551,7 +589,7 @@ val_idx = list(range(train_size, len(df)))
 #val_idx = get_cv_idxs(n, val_pct=0.1)
 
 
-# In[117]:
+# In[546]:
 
 
 len(val_idx)
@@ -563,7 +601,7 @@ len(val_idx)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).  Is_multi is set True because there there are three labels for target BUY,HOLD,SELL
 
-# In[118]:
+# In[547]:
 
 
 md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=64,
@@ -572,7 +610,7 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 
 # Some categorical variables have a lot more levels than others.
 
-# In[119]:
+# In[548]:
 
 
 cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
@@ -580,56 +618,56 @@ cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
 
 # We use the *cardinality* of each variable (that is, its number of unique values) to decide how large to make its *embeddings*. Each level will be associated with a vector with length defined as below.
 
-# In[120]:
+# In[549]:
 
 
 emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 
 
-# In[121]:
+# In[550]:
 
 
 len(df.columns)-len(cat_vars)
 
 
-# In[122]:
+# In[551]:
 
 
 m = md.get_learner(emb_szs, len(df.columns)-len(cat_vars),dropout, 2, [100,50], [0.03,0.06],None,True)
 
 
-# In[123]:
+# In[552]:
 
 
 m.lr_find()
 m.sched.plot(100)
 
 
-# In[124]:
+# In[553]:
 
 
 m.fit(lr, 3)
 
 
-# In[125]:
+# In[554]:
 
 
 m.fit(lr, 5, cycle_len=1)
 
 
-# In[126]:
+# In[555]:
 
 
 m.fit(lr, 3, cycle_len=4, cycle_mult=2 )
 
 
-# In[127]:
+# In[556]:
 
 
 m.save(modelName)
 
 
-# In[128]:
+# In[557]:
 
 
 m.load(modelName)
@@ -637,13 +675,13 @@ m.load(modelName)
 
 # ## Validation
 
-# In[141]:
+# In[558]:
 
 
 (x,y1)=m.predict_with_targs()
 
 
-# In[142]:
+# In[559]:
 
 
 val = p.train.iloc[val_idx]
@@ -659,26 +697,26 @@ valpred.tail(100)
 
 # Calculate the percent accuracy on the validation set
 
-# In[143]:
+# In[560]:
 
 
 p.calculate_accuracy(valpred)
 
 
-# In[144]:
+# In[561]:
 
 
-p.calculate_net_profit(valpred, 300, 0)
+p.calculate_net_profit(valpred, 15000, 0)
 p.result
 
 
-# In[146]:
+# In[562]:
 
 
-p.plot_profit(p.net_profit_df)
+# p.plot_profit(p.net_profit_df)
 
 
-# In[147]:
+# In[563]:
 
 
 p.net_profit_df
@@ -686,13 +724,13 @@ p.net_profit_df
 
 # ## Test
 
-# In[150]:
+# In[564]:
 
 
 np.argmax(m.predict(True), axis =1)
 
 
-# In[154]:
+# In[565]:
 
 
 testPred = pd.DataFrame({
@@ -704,35 +742,29 @@ testPred = pd.DataFrame({
 testPred.head(10)
 
 
-# Calculate the percent accuracy on the test set
-
-# In[155]:
+# In[566]:
 
 
 p.calculate_accuracy(testPred)
 
 
-# In[156]:
+# In[567]:
 
 
-p.calculate_net_profit(testPred, 300, 0)
+p.calculate_net_profit(testPred, 15000, 0)
 p.result
 
 
-# In[ ]:
+# In[568]:
 
 
 p.net_profit_df
 
 
-# In[ ]:
+# In[569]:
 
 
-p.plot_profit(p.net_profit_df)
+# p.plot_profit(p.net_profit_df)
 
 
-# In[ ]:
-
-
-
-
+# #### 
