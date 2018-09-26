@@ -60,6 +60,9 @@ class StockPredictor:
     def get_max_lookback(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).max()
 
+    def get_moving_average(self, target, lookback):
+        return self.train[target].rolling(window=lookback, min_periods=1).mean()
+
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
@@ -73,6 +76,14 @@ class StockPredictor:
         self.train['maxh30'] = self.get_max_lookback("High", 30)
         self.train['maxh60'] = self.get_max_lookback("High", 60)
         self.train['maxh90'] = self.get_max_lookback("High", 90)
+        self.train['sma5'] = self.get_moving_average("Close", 5)
+        self.train['sma15'] = self.get_moving_average("Close", 15)
+        self.train['sma30'] = self.get_moving_average("Close", 30)
+        self.train['sma60'] = self.get_moving_average("Close", 60)
+        self.train['sma90'] = self.get_moving_average("Close", 90)
+        # rsi = self.train['momentum_rsi']
+        # self.train['rsi_category'] = rsi < 30 
+        
 
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
@@ -104,17 +115,28 @@ class StockPredictor:
         self.train.loc[max_lookahead > percentIncrease *
                        self.train['Close'], 'action'] = 2
 
-        self.train.action = self.train.action.astype(int)
+        self.train.action = self.train.action.astype(np.float32)
         sell_count = str(len(self.train[self.train.action == 0]))
         hold_count = str(len(self.train[self.train.action == 1]))
         buy_count = str(len(self.train[self.train.action == 2]))
         print('Buy count: ' + buy_count + ' Sell count: ' +
               sell_count + ' Hold count: ' + hold_count)
 
+    def set_target_hold_reg(self, target, lookahead, percentIncrease):
+        self.train['max_lookahead'] = 0
+        max_lookahead = self.train[target] \
+            .iloc[::-1] \
+            .rolling(window=lookahead, min_periods=1) \
+            .max() \
+            .iloc[::-1]
+        self.train['max_lookahead'] = max_lookahead
+        self.train.max_lookahead = self.train.max_lookahead.astype(np.float32)
+
     def add_date_values(self):
         add_datepart(self.train, 'Timestamp', drop=False)
         self.train['hour'] = self.train['Timestamp'].dt.hour
         self.train['minute'] = self.train['Timestamp'].dt.minute
+
     def set_target_historical(self, target, lookback, percentIncrease):
         max_in_lookback_timeframe = self.get_max_lookback(target, lookback)
         self.train['action'] = max_in_lookback_timeframe > (
@@ -168,6 +190,34 @@ class StockPredictor:
             'percentIncrease': round(percentIncrease, 3),
             'percentDifference': round(percentDifference, 3),
             'totalTrades': totalBuys + totalSells
+        }
+        return result
+
+    def calculate_accuracy_hold(self, df):
+        successful_predictions = df.loc[df.action == df.predicted]
+        total_accuracy = len(successful_predictions)/len(df)
+        total_sell_actions = df.loc[df.action == 0]
+        total_hold_actions = df.loc[df.action == 1]
+        total_buy_actions = df.loc[df.action == 2]
+        successful_sell_predictions = successful_predictions.loc[successful_predictions.action == 0]
+        successful_hold_predictions = successful_predictions.loc[successful_predictions.action == 1]
+        successful_buy_predictions = successful_predictions.loc[successful_predictions.action == 2]
+        sell_accuracy = len(successful_sell_predictions) / \
+            len(total_sell_actions)
+        hold_accuracy = len(successful_hold_predictions) / \
+            len(total_hold_actions)
+        buy_accuracy = len(successful_buy_predictions)/len(total_buy_actions)
+        f1Score = (buy_accuracy + sell_accuracy + hold_accuracy)/3
+        result = {
+            'F1Score': round(f1Score, 3),
+            'totalAccuracy': round(total_accuracy, 3),
+            'buyAccuracy': round(buy_accuracy, 3),
+            'sellAccuracy': round(sell_accuracy, 3),
+            'hold_accuracy': round(hold_accuracy, 3),
+            'totalSellActions': len(total_sell_actions),
+            'totalHoldActions': len(total_hold_actions),
+            'totalBuyActions': len(total_buy_actions),
+            'successfulBuyPredictions': len(successful_buy_predictions)
         }
         return result
 
@@ -267,6 +317,46 @@ class StockPredictor:
         self.net_profit_df = df
         self.result = result
         # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
+
+    def calculate_net_profit_hold_reg(self, inputDf, startAmount, fee, percentIncrease):
+        df = inputDf
+        df['buyAmount'] = 0
+        df['sellAmount'] = 0
+        totalBuys = 0
+        totalSells = 0
+        for index, row in df.iterrows():
+            prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
+            prevSellAmount = df.sellAmount.get(index - 1, np.nan)
+            predicted = row.predicted
+            threshold = percentIncrease * row.Close
+            if index == df.index[0]:
+                df.loc[index, 'buyAmount'] = startAmount
+            elif predicted >= threshold and prevBuyAmount > 0:
+                # BUY
+                base_sell = prevBuyAmount / row.Close
+                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
+                totalBuys += 1
+            elif predicted >= threshold and prevBuyAmount == 0:
+                df.loc[index, 'sellAmount'] = prevSellAmount
+            elif predicted >= row.Close:
+                # HOLD
+                df.loc[index, 'buyAmount'] = prevBuyAmount
+                df.loc[index, 'sellAmount'] = prevSellAmount
+            elif predicted < row.Close and prevSellAmount > 0:
+                # SELL
+                base_buy = prevSellAmount * row.Close
+                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
+                totalSells += 1
+            elif predicted < row.Close and prevSellAmount == 0:
+                df.loc[index, 'buyAmount'] = prevBuyAmount
+            else:
+                raise ValueError(
+                    'This is weird, invalid predicted value: ' + str(predicted) + ' Close: ' + str(row.Close))
+
+        result = self.generate_net_profit_result(
+            df, startAmount, totalBuys, totalSells)
+        self.net_profit_df = df
+        self.result = result
 
     # ///////////////////////////////
     # /////////// UTIL //////////////
