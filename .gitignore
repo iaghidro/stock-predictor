@@ -12,3 +12,5 @@
 /lib/__pycache__/
 /lib/.cache/
 playground/bitstamp_07-09.csv
+data/*
+notebook-files/.ipynb_checkpoints/*
