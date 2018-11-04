@@ -16,6 +16,8 @@
     "trainModel"            : "node scripts/trainModel.js",
     "predict"               : "node scripts/predict.js",
     
+    "playground"            : "python3 playground/playground.py",
+    
     "fetch:data"            : "node scripts/fetchData.js"
         
   },

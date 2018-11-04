@@ -25,8 +25,8 @@ missingData = {
     'Close': [1, np.nan, 6, 34, 6],
     'Open': [np.nan, -np.inf, 78, 56, 7]
 }
-backfilledData = {
-    'Close': [1, 6, 6, 34, 6],
+cleaned_data = {
+    'Close': [1, 1, 6, 34, 6],
     'Open': [78, 78, 78, 56, 7]
 }
 testRecordsCount = 2
@@ -82,7 +82,7 @@ def test_clean_train():
     predictor = create_predictor(trainData)
     predictor.train = pd.DataFrame(data=missingData)
     predictor.clean_train()
-    expectedDf = pd.DataFrame(data=backfilledData)
+    expectedDf = pd.DataFrame(data=cleaned_data)
     expectedDf.Close = expectedDf.Close.astype(float)
     expectedDf.Open = expectedDf.Open.astype(float)
     assert predictor.train.equals(expectedDf)

@@ -50,7 +50,8 @@ class StockPredictor:
         #     df = df.dropna()
         #     df = df.replace(np.nan,df.mean())
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
-        self.train = self.train.fillna(method='bfill')
+        self.train.fillna(method='ffill', inplace=True)
+        self.train.fillna(method='bfill', inplace=True)
         print('Train size: ' + str(len(self.train)))
 
     # ///////////////////////////////
