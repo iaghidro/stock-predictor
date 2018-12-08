@@ -60,6 +60,9 @@ class StockPredictor:
 
     def get_max_lookback(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).max()
+        
+    def get_min_lookback(self, target, lookback):
+        return self.train[target].rolling(window=lookback, min_periods=1).min()
 
     def get_moving_average(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).mean()
@@ -82,6 +85,11 @@ class StockPredictor:
         self.train['sma30'] = self.get_moving_average("Close", 30)
         self.train['sma60'] = self.get_moving_average("Close", 60)
         self.train['sma90'] = self.get_moving_average("Close", 90)
+        self.train['minc5'] = self.get_min_lookback("Close", 5)
+        self.train['minc15'] = self.get_min_lookback("Close", 15)
+        self.train['minc30'] = self.get_min_lookback("Close", 30)
+        self.train['minc60'] = self.get_min_lookback("Close", 60)
+        self.train['minc90'] = self.get_min_lookback("Close", 90)
         # rsi = self.train['momentum_rsi']
         # self.train['rsi_category'] = rsi < 30
 
