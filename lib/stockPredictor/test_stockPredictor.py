@@ -87,6 +87,14 @@ def test_clean_train():
     expectedDf.Open = expectedDf.Open.astype(float)
     assert predictor.train.equals(expectedDf)
 
+
+def test_trim_ends():
+    p = create_predictor(trainData)
+    p.train = p.df
+    expectedDf = p.df.tail(4).head(2)
+    p.trim_ends(1, 2)
+    assert p.train.copy().equals(expectedDf.copy())
+
 # ///////////////////////////////
 # //// FEATURE ENGINEERING //////
 # ///////////////////////////////

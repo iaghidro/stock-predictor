@@ -5,6 +5,7 @@ from ta import *
 #from fastai.structured import *
 #from fastai.column_data import *
 
+
 class StockPredictor:
 
     def __init__(self, df, index):
@@ -47,12 +48,18 @@ class StockPredictor:
         })[['Timestamp', 'Volume', 'Open', 'High', 'Low', 'Close']]
 
     def clean_train(self):
-        #     df = df.dropna()
-        #     df = df.replace(np.nan,df.mean())
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
         self.train.fillna(method='ffill', inplace=True)
         self.train.fillna(method='bfill', inplace=True)
         print('Train size: ' + str(len(self.train)))
+
+    """ Trim the beginning to have accurate TA values, trim the end to have accurate target value"""
+
+    def trim_ends(self, begin_count, end_count):
+        self.train = self.train.iloc[begin_count:]
+        self.train = self.train.iloc[:-end_count]
+        print('Trim beginning: ' + str(begin_count) + '. Trim end: ' +
+              str(end_count) + '. Train size: ' + str(len(self.train)))
 
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
@@ -60,7 +67,7 @@ class StockPredictor:
 
     def get_max_lookback(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).max()
-        
+
     def get_min_lookback(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).min()
 
@@ -391,6 +398,7 @@ class StockPredictor:
         return df.resample(timeFrame).agg(ohlc_dict)
 
     def plot_profit(self, df):
+        df.reset_index(inplace=True)
         df.plot(
             x='Timestamp',
             y=['Close', 'buyAmount'],
