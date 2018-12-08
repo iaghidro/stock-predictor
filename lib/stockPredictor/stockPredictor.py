@@ -2,8 +2,6 @@ import json as js
 import numpy as np
 import pandas as pd
 from ta import *
-#from fastai.structured import *
-#from fastai.column_data import *
 
 
 class StockPredictor:
@@ -29,11 +27,11 @@ class StockPredictor:
         self.train.loc[:, self.index] = pd.to_datetime(
             self.train[self.index], unit='s').copy()
 
-    def split_train_validation(self, testRecordsCount, trainRecordsCount):
-        self.test = self.train.tail(testRecordsCount)
-        self.train = self.train.head(trainRecordsCount)
-#        self.test.reset_index(inplace=True)
-#        self.train.reset_index(inplace=True)
+    def split_test_train(self, percent_split):
+        train_records_count = int(len(self.train) * percent_split)
+        test_records_count = int(len(self.train) * (1-percent_split))
+        self.test = self.train.tail(test_records_count)
+        self.train = self.train.head(train_records_count)
         print('Train size: ' + str(len(self.train)) +
               ' Test size: ' + str(len(self.test)))
 
@@ -60,6 +58,21 @@ class StockPredictor:
         self.train = self.train.iloc[:-end_count]
         print('Trim beginning: ' + str(begin_count) + '. Trim end: ' +
               str(end_count) + '. Train size: ' + str(len(self.train)))
+
+    # ///////////////////////////////
+    # ////// FEATURE CREATION ///////
+    # ///////////////////////////////
+
+    def get_train_size(self, percent_split):
+        train_records_count = int(len(self.train) * percent_split)
+        print('Train size: ' + str(train_records_count) +
+              ' percent_split: ' + str(percent_split))
+        return train_records_count
+
+    def get_validation_indexes(self, train_size, df):
+        validation_indexes = list(range(train_size, len(df)))
+        print('Validation Index size: ' + str(len(validation_indexes)))
+        return validation_indexes
 
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
@@ -175,11 +188,6 @@ class StockPredictor:
         buy_count = str(len(self.train[self.train.action == 2]))
         print('Buy count: ' + buy_count + ' Sell count: ' +
               sell_count + ' Hold count: ' + hold_count)
-
-    def add_date_values(self):
-        add_datepart(self.train, 'Timestamp', drop=False)
-        self.train['hour'] = self.train['Timestamp'].dt.hour
-        self.train['minute'] = self.train['Timestamp'].dt.minute
 
     # ///////////////////////////////
     # ///////// EVALUATION //////////
@@ -377,11 +385,11 @@ class StockPredictor:
     # /////////// UTIL //////////////
     # ///////////////////////////////
 
-    def save_to_feather(self):
+    def save_to_feather(self, path):
         self.train.reset_index(inplace=True)
         self.train.to_feather(f'{PATH}train')
 
-    def read_from_feather(self):
+    def read_from_feather(self, PATH):
         self.train = pd.read_feather(f'{PATH}train')
         # train.drop(self.index,1,inplace=True)
 

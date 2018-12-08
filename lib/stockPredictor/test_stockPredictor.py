@@ -50,13 +50,13 @@ def test_constructor():
 # ///////////////////////////////
 
 
-def test_split_train_validation():
+def test_split_test_train():
     df = pd.DataFrame(data=trainData)
-    predictor = create_predictor(df)
-    predictor.train = df
-    predictor.split_train_validation(testRecordsCount, trainRecordsCount)
-    assert predictor.train.equals(df.head(3))
-    assert predictor.test.equals(df.tail(2))
+    p = create_predictor(df)
+    p.train = df
+    p.split_test_train(0.6)
+    assert p.train.equals(df.head(3))
+    assert p.test.equals(df.tail(2))
 
 
 def test_sample_train():
@@ -94,6 +94,25 @@ def test_trim_ends():
     expectedDf = p.df.tail(4).head(2)
     p.trim_ends(1, 2)
     assert p.train.copy().equals(expectedDf.copy())
+
+# ///////////////////////////////
+# ////// FEATURE CREATION ///////
+# ///////////////////////////////
+
+
+def test_get_train_size():
+    df = pd.DataFrame(data=trainData)
+    p = create_predictor(df)
+    p.train = df
+    train_size = p.get_train_size(0.6)
+    assert train_size == 3
+
+
+def test_get_validation_indexes():
+    df = pd.DataFrame(data=trainData)
+    p = create_predictor(df)
+    validation_indexes = p.get_validation_indexes(3, df)
+    assert len(validation_indexes) == 2
 
 # ///////////////////////////////
 # //// FEATURE ENGINEERING //////
