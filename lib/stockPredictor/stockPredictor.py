@@ -5,7 +5,6 @@ from ta import *
 #from fastai.structured import *
 #from fastai.column_data import *
 
-
 class StockPredictor:
 
     def __init__(self, df, index):
@@ -17,16 +16,17 @@ class StockPredictor:
     # ///////////////////////////////
 
     def sample_train(self, sampleSize):
-        self.train = self.df.tail(sampleSize)
+        self.train = self.df.iloc[-sampleSize:].copy()
         print('Train size: ' + str(len(self.train)) +
               ' Original size: ' + str(len(self.df)))
 
     def set_date_as_index(self):
-        self.train[self.index] = pd.to_datetime(self.train[self.index])
+        self.train.loc[:, self.index] = pd.to_datetime(
+            self.train[self.index]).copy()
 
     def set_date_as_index_unix(self):
-        self.train[self.index] = pd.to_datetime(
-            self.train[self.index], unit='s')
+        self.train.loc[:, self.index] = pd.to_datetime(
+            self.train[self.index], unit='s').copy()
 
     def split_train_validation(self, testRecordsCount, trainRecordsCount):
         self.test = self.train.tail(testRecordsCount)
@@ -83,8 +83,7 @@ class StockPredictor:
         self.train['sma60'] = self.get_moving_average("Close", 60)
         self.train['sma90'] = self.get_moving_average("Close", 90)
         # rsi = self.train['momentum_rsi']
-        # self.train['rsi_category'] = rsi < 30 
-        
+        # self.train['rsi_category'] = rsi < 30
 
     """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
