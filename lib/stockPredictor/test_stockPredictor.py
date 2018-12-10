@@ -119,16 +119,42 @@ def test_get_validation_indexes():
 # ///////////////////////////////
 
 
+def test_get_max_lookahead():
+    p = create_predictor(trainData)
+    p.train = p.df
+    max_df = p.get_max_lookahead(p.train, 'Close', 2)
+    max_lookahead_data = {
+        'expected_max': [1.006, 1.006, 1.005, 1.4, 1.4]
+    }
+    df = pd.DataFrame(data=max_lookahead_data)
+    df['max'] = max_df
+    df.max = df['max'].astype(np.float64)
+    assert df.expected_max.equals(df.max)
+
+
+def test_get_last_lookahead():
+    p = create_predictor(trainData)
+    p.train = p.df
+    last_df = p.get_last_lookahead(p.train, 'Close', 2)
+    last_lookahead_data = {
+        'expected_last': [1.003, 1.005, 1.4, np.nan, np.nan]
+    }
+    df = pd.DataFrame(data=last_lookahead_data)
+    df['last'] = last_df
+    df.last = df['last'].astype(np.float64)
+    assert df.expected_last.equals(df.last)
+
+
 def test_set_target():
-    predictor = create_predictor(trainData)
-    predictor.train = predictor.df
-    predictor.set_target('Close', 2, 1.005)
+    p = create_predictor(trainData)
+    p.train = p.df
+    p.set_target('Close', 2, 1.005)
     action_data = {
         'action': [1, 0, 0, 1, 0]
     }
     actions = pd.DataFrame(data=action_data)
     actions.action = actions.action.astype(int)
-    assert predictor.train.action.equals(actions.action)
+    assert p.train.action.equals(actions.action)
 
 
 def test_set_target_historical():
@@ -194,14 +220,6 @@ def test_calculate_net_profit():
 # ///////////////////////////////
 # /////////// UTIL //////////////
 # ///////////////////////////////
-
-
-def test_save_to_feather():
-    predictor = create_predictor(baseData)
-    predictor.train = predictor.df.tail(3)
-#    predictor.save_to_feather('stockPredictor/')
-#    indexDf = pd.DataFrame(data=[0,1,2])
-#    assert predictor.train.index.equals(indexDf)
 
 
 #    print('******')

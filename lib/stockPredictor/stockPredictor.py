@@ -35,15 +35,16 @@ class StockPredictor:
         print('Train size: ' + str(len(self.train)) +
               ' Test size: ' + str(len(self.test)))
 
-    def normalize_train(self, volume, open, high, low, close):
+    def normalize_train(self, volume, open, high, low, close, weighted_price):
         self.train = pd.DataFrame({
             'Timestamp': self.train[self.index],
             'Volume': self.train[volume],
             'Open': self.train[open],
             'High': self.train[high],
             'Low': self.train[low],
-            'Close': self.train[close]
-        })[['Timestamp', 'Volume', 'Open', 'High', 'Low', 'Close']]
+            'Close': self.train[close],
+            'Weighted_Price': self.train[weighted_price]
+        })[['Timestamp', 'Volume', 'Open', 'High', 'Low', 'Close', 'Weighted_Price']]
 
     def clean_train(self):
         self.train = self.train.replace([np.inf, -np.inf], np.nan)
@@ -87,6 +88,17 @@ class StockPredictor:
     def get_moving_average(self, target, lookback):
         return self.train[target].rolling(window=lookback, min_periods=1).mean()
 
+    def get_max_lookahead(self, df, target, lookahead):
+        return df[target] \
+            .iloc[::-1] \
+            .rolling(window=lookahead, min_periods=1) \
+            .max() \
+            .iloc[::-1] 
+    
+    def get_last_lookahead(self, df, target, lookahead):
+        return df[target] \
+            .shift(-lookahead)
+
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
@@ -117,12 +129,7 @@ class StockPredictor:
         to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
 
     def set_target(self, target, lookahead, percentIncrease):
-        #        ,win_type='boxcar'
-        max_lookahead = self.train[target] \
-            .iloc[::-1] \
-            .rolling(window=lookahead, min_periods=1) \
-            .max() \
-            .iloc[::-1]
+        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
         self.train['action'] = max_lookahead > (
             percentIncrease * self.train['Close'])
 #        self.train['max'] =max_in_lookahead_timeframe
@@ -133,16 +140,10 @@ class StockPredictor:
 
     def set_target_hold(self, target, lookahead, percentIncrease):
         self.train['action'] = 0
-        max_lookahead = self.train[target] \
-            .iloc[::-1] \
-            .rolling(window=lookahead, min_periods=1) \
-            .max() \
-            .iloc[::-1]
+        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
         self.train.loc[max_lookahead > self.train['Close'], 'action'] = 1
-
         self.train.loc[max_lookahead > percentIncrease *
                        self.train['Close'], 'action'] = 2
-
         self.train.action = self.train.action.astype(np.float32)
         sell_count = str(len(self.train[self.train.action == 0]))
         hold_count = str(len(self.train[self.train.action == 1]))
@@ -152,11 +153,7 @@ class StockPredictor:
 
     def set_target_hold_reg(self, target, lookahead, percentIncrease):
         self.train['max_lookahead'] = 0
-        max_lookahead = self.train[target] \
-            .iloc[::-1] \
-            .rolling(window=lookahead, min_periods=1) \
-            .max() \
-            .iloc[::-1]
+        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
         self.train['max_lookahead'] = max_lookahead
         self.train.max_lookahead = self.train.max_lookahead.astype(np.float32)
 
