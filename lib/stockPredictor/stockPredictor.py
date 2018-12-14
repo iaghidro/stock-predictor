@@ -93,11 +93,21 @@ class StockPredictor:
             .iloc[::-1] \
             .rolling(window=lookahead, min_periods=1) \
             .max() \
-            .iloc[::-1] 
-    
+            .iloc[::-1]
+
     def get_last_lookahead(self, df, target, lookahead):
-        return df[target] \
-            .shift(-lookahead)
+        return df[target].shift(-lookahead)
+
+    def get_lookback(self, df, target, lookback):
+        return df[target].shift(lookback)
+
+    def add_historical_candles(self, df, lookback):
+        for i in range(1, lookback):
+            df[str(i) + 'Open'] = self.get_lookback(df, 'Open', i)
+            df[str(i) + 'High'] = self.get_lookback(df, 'High', i)
+            df[str(i) + 'Low'] = self.get_lookback(df, 'Low', i)
+            df[str(i) + 'Close'] = self.get_lookback(df, 'Close', i)
+            df[str(i) + 'Volume'] = self.get_lookback(df, 'Volume', i)
 
     def add_ta(self):
         self.train = add_all_ta_features(
@@ -122,6 +132,7 @@ class StockPredictor:
         self.train['minc30'] = self.get_min_lookback("Close", 30)
         self.train['minc60'] = self.get_min_lookback("Close", 60)
         self.train['minc90'] = self.get_min_lookback("Close", 90)
+        self.add_historical_candles(self.train, 30)
         # rsi = self.train['momentum_rsi']
         # self.train['rsi_category'] = rsi < 30
 

@@ -4,6 +4,14 @@ import numpy as np
 import pandas as pd
 from stockPredictor import StockPredictor
 
+complete_train_data = {
+    'Close': [3, 5, 6, 6, 4],
+    'Open': [5, 7, 4, 4, 8],
+    'Low': [8, 5, 3, 8, 7],
+    'Volume': [4, 5, 3, 8, 9],
+    'High': [4, 3, 1, 8, 4],
+    'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160]
+}
 trainData = {
     'Close': [1, 1.006, 1.003, 1.005, 1.4],
     'Open': [1.1, 1.2, 1.4, 1.8, 2],
@@ -131,6 +139,30 @@ def test_get_max_lookahead():
     df.max = df['max'].astype(np.float64)
     assert df.expected_max.equals(df.max)
 
+
+def test_add_historical_candles():
+    p = create_predictor(complete_train_data)
+    p.add_historical_candles(p.df, 3)
+    expected_data = {
+        'Close':    [3, 5, 6, 6, 4],
+        'Open':     [5, 7, 4, 4, 8],
+        'Low':      [8, 5, 3, 8, 7],
+        'Volume':   [4, 5, 3, 8, 9],
+        'High':     [4, 3, 1, 8, 4],
+        'Timestamp': [1325317920, 1325317980, 1325318040, 1325318100, 1325318160],
+        '1Open':    [np.nan, 5.0,   7.0, 4.0,   4.0],
+        '1High':    [np.nan, 4.0,   3.0, 1.0,   8.0],
+        '1Low':     [np.nan, 8.0,   5.0, 3.0,   8.0],
+        '1Close':   [np.nan, 3.0,   5.0, 6.0,   6.0],
+        '1Volume':  [np.nan, 4.0,   5.0, 3.0,   8.0],
+        '2Open':    [np.nan, np.nan, 5.0, 7.0,  4.0],
+        '2High':    [np.nan, np.nan, 4.0, 3.0,  1.0],
+        '2Low':     [np.nan, np.nan, 8.0, 5.0,  3.0],
+        '2Close':   [np.nan, np.nan, 3.0, 5.0,  6.0],
+        '2Volume':  [np.nan, np.nan, 4.0, 5.0,  3.0],
+    }
+    expected_df = pd.DataFrame(data=expected_data)
+    assert p.df.equals(expected_df)
 
 def test_get_last_lookahead():
     p = create_predictor(trainData)
