@@ -103,35 +103,20 @@ class StockPredictor:
 
     def add_historical_candles(self, df, lookback):
         for i in range(1, lookback):
-            df[str(i) + 'Open'] = self.get_lookback(df, 'Open', i)
-            df[str(i) + 'High'] = self.get_lookback(df, 'High', i)
-            df[str(i) + 'Low'] = self.get_lookback(df, 'Low', i)
-            df[str(i) + 'Close'] = self.get_lookback(df, 'Close', i)
-            df[str(i) + 'Volume'] = self.get_lookback(df, 'Volume', i)
+            df[str(i) + 'Open'] = self.get_lookback(df, 'Open', i).astype('float')
+            df[str(i) + 'High'] = self.get_lookback(df, 'High', i).astype('float')
+            df[str(i) + 'Low'] = self.get_lookback(df, 'Low', i).astype('float')
+            df[str(i) + 'Close'] = self.get_lookback(df, 'Close', i).astype('float')
+            df[str(i) + 'Volume'] = self.get_lookback(df, 'Volume', i).astype('float')
 
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
-        self.train['maxc5'] = self.get_max_lookback("Close", 5)
-        self.train['maxc15'] = self.get_max_lookback("Close", 15)
-        self.train['maxc30'] = self.get_max_lookback("Close", 30)
-        self.train['maxc60'] = self.get_max_lookback("Close", 60)
-        self.train['maxc90'] = self.get_max_lookback("Close", 90)
-        self.train['maxh5'] = self.get_max_lookback("High", 5)
-        self.train['maxh15'] = self.get_max_lookback("High", 15)
-        self.train['maxh30'] = self.get_max_lookback("High", 30)
-        self.train['maxh60'] = self.get_max_lookback("High", 60)
-        self.train['maxh90'] = self.get_max_lookback("High", 90)
         self.train['sma5'] = self.get_moving_average("Close", 5)
         self.train['sma15'] = self.get_moving_average("Close", 15)
         self.train['sma30'] = self.get_moving_average("Close", 30)
         self.train['sma60'] = self.get_moving_average("Close", 60)
         self.train['sma90'] = self.get_moving_average("Close", 90)
-        self.train['minc5'] = self.get_min_lookback("Close", 5)
-        self.train['minc15'] = self.get_min_lookback("Close", 15)
-        self.train['minc30'] = self.get_min_lookback("Close", 30)
-        self.train['minc60'] = self.get_min_lookback("Close", 60)
-        self.train['minc90'] = self.get_min_lookback("Close", 90)
         self.add_historical_candles(self.train, 30)
         # rsi = self.train['momentum_rsi']
         # self.train['rsi_category'] = rsi < 30
