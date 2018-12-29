@@ -63,8 +63,8 @@ def test_split_test_train():
     p = create_predictor(df)
     p.train = df
     p.split_test_train(0.6)
-    assert p.train.equals(df.head(3))
-    assert p.test.equals(df.tail(2))
+    assert p.train.equals(df.head(3).set_index('Timestamp'))
+    assert p.test.equals(df.tail(2).set_index('Timestamp'))
 
 
 def test_sample_train():

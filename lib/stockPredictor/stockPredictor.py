@@ -32,6 +32,8 @@ class StockPredictor:
         test_records_count = int(len(self.train) * (1-percent_split))
         self.test = self.train.tail(test_records_count)
         self.train = self.train.head(train_records_count)
+        self.test = self.test.set_index('Timestamp')
+        self.train = self.train.set_index('Timestamp')
         print('Train size: ' + str(len(self.train)) +
               ' Test size: ' + str(len(self.test)))
 
@@ -75,6 +77,16 @@ class StockPredictor:
         print('Validation Index size: ' + str(len(validation_indexes)))
         return validation_indexes
 
+    def apply_variable_types(self, cat_vars, contin_vars, dep):
+        self.train = self.train[cat_vars + contin_vars + [dep]].copy()
+        self.test = self.test[cat_vars + contin_vars + [dep]].copy()
+        for v in cat_vars: 
+            self.train[v] = self.train[v].astype('category').cat.as_ordered()
+            self.test[v] = self.test[v].astype('category').cat.as_ordered()
+        for v in contin_vars:
+            self.train[v] = self.train[v].astype('float32')
+            self.test[v] = self.test[v].astype('float32')
+
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
     # ///////////////////////////////
@@ -103,11 +115,16 @@ class StockPredictor:
 
     def add_historical_candles(self, df, lookback):
         for i in range(1, lookback):
-            df[str(i) + 'Open'] = self.get_lookback(df, 'Open', i).astype('float')
-            df[str(i) + 'High'] = self.get_lookback(df, 'High', i).astype('float')
-            df[str(i) + 'Low'] = self.get_lookback(df, 'Low', i).astype('float')
-            df[str(i) + 'Close'] = self.get_lookback(df, 'Close', i).astype('float')
-            df[str(i) + 'Volume'] = self.get_lookback(df, 'Volume', i).astype('float')
+            df[str(i) + 'Open'] = self.get_lookback(df,
+                                                    'Open', i).astype('float')
+            df[str(i) + 'High'] = self.get_lookback(df,
+                                                    'High', i).astype('float')
+            df[str(i) + 'Low'] = self.get_lookback(df,
+                                                   'Low', i).astype('float')
+            df[str(i) + 'Close'] = self.get_lookback(df,
+                                                     'Close', i).astype('float')
+            df[str(i) + 'Volume'] = self.get_lookback(df,
+                                                      'Volume', i).astype('float')
 
     def add_ta(self):
         self.train = add_all_ta_features(

@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[188]:
+# In[319]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -14,7 +14,7 @@ get_ipython().run_line_magic('autoreload', '2')
 # ## Stock Predictor Lib
 # 
 
-# In[189]:
+# In[320]:
 
 
 import json as js
@@ -51,6 +51,8 @@ class StockPredictor:
         test_records_count = int(len(self.train) * (1-percent_split))
         self.test = self.train.tail(test_records_count)
         self.train = self.train.head(train_records_count)
+        self.test = self.test.set_index('Timestamp')
+        self.train = self.train.set_index('Timestamp')
         print('Train size: ' + str(len(self.train)) +
               ' Test size: ' + str(len(self.test)))
 
@@ -94,6 +96,16 @@ class StockPredictor:
         print('Validation Index size: ' + str(len(validation_indexes)))
         return validation_indexes
 
+    def apply_variable_types(self, cat_vars, contin_vars, dep):
+        self.train = self.train[cat_vars + contin_vars + [dep]].copy()
+        self.test = self.test[cat_vars + contin_vars + [dep]].copy()
+        for v in cat_vars: 
+            self.train[v] = self.train[v].astype('category').cat.as_ordered()
+            self.test[v] = self.test[v].astype('category').cat.as_ordered()
+        for v in contin_vars:
+            self.train[v] = self.train[v].astype('float32')
+            self.test[v] = self.test[v].astype('float32')
+
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
     # ///////////////////////////////
@@ -118,35 +130,25 @@ class StockPredictor:
 
     def add_historical_candles(self, df, lookback):
         for i in range(1, lookback):
-            df[str(i) + 'Open'] = self.get_lookback(df, 'Open', i)
-            df[str(i) + 'High'] = self.get_lookback(df, 'High', i)
-            df[str(i) + 'Low'] = self.get_lookback(df, 'Low', i)
-            df[str(i) + 'Close'] = self.get_lookback(df, 'Close', i)
-            df[str(i) + 'Volume'] = self.get_lookback(df, 'Volume', i)
+            df[str(i) + 'Open'] = self.get_lookback(df,
+                                                    'Open', i).astype('float')
+            df[str(i) + 'High'] = self.get_lookback(df,
+                                                    'High', i).astype('float')
+            df[str(i) + 'Low'] = self.get_lookback(df,
+                                                   'Low', i).astype('float')
+            df[str(i) + 'Close'] = self.get_lookback(df,
+                                                     'Close', i).astype('float')
+            df[str(i) + 'Volume'] = self.get_lookback(df,
+                                                      'Volume', i).astype('float')
 
     def add_ta(self):
         self.train = add_all_ta_features(
             self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
-        self.train['maxc5'] = self.get_max_lookback("Close", 5)
-        self.train['maxc15'] = self.get_max_lookback("Close", 15)
-        self.train['maxc30'] = self.get_max_lookback("Close", 30)
-        self.train['maxc60'] = self.get_max_lookback("Close", 60)
-        self.train['maxc90'] = self.get_max_lookback("Close", 90)
-        self.train['maxh5'] = self.get_max_lookback("High", 5)
-        self.train['maxh15'] = self.get_max_lookback("High", 15)
-        self.train['maxh30'] = self.get_max_lookback("High", 30)
-        self.train['maxh60'] = self.get_max_lookback("High", 60)
-        self.train['maxh90'] = self.get_max_lookback("High", 90)
         self.train['sma5'] = self.get_moving_average("Close", 5)
         self.train['sma15'] = self.get_moving_average("Close", 15)
         self.train['sma30'] = self.get_moving_average("Close", 30)
         self.train['sma60'] = self.get_moving_average("Close", 60)
         self.train['sma90'] = self.get_moving_average("Close", 90)
-        self.train['minc5'] = self.get_min_lookback("Close", 5)
-        self.train['minc15'] = self.get_min_lookback("Close", 15)
-        self.train['minc30'] = self.get_min_lookback("Close", 30)
-        self.train['minc60'] = self.get_min_lookback("Close", 60)
-        self.train['minc90'] = self.get_min_lookback("Close", 90)
         self.add_historical_candles(self.train, 30)
         # rsi = self.train['momentum_rsi']
         # self.train['rsi_category'] = rsi < 30
@@ -439,7 +441,7 @@ class StockPredictor:
 # ## Config
 # 
 
-# In[190]:
+# In[321]:
 
 
 from fastai.structured import *
@@ -450,7 +452,7 @@ from IPython.display import HTML
 from IPython.core.display import display
 
 
-# In[191]:
+# In[322]:
 
 
 pd.set_option('display.max_columns', 100)
@@ -460,7 +462,7 @@ index='Timestamp'
 # index='time_period_start'
 lookahead = 15
 percentIncrease = 1.002
-recordsCount = 120000
+recordsCount = 80000
 test_ratio  = 0.95
 train_ratio = 0.95
 lr = 1e-4
@@ -470,9 +472,45 @@ dep = 'action'
 PATH='data/stock/'
 
 
+# In[323]:
+
+
+cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
+'TimestampDayofyear','TimestampIs_month_end', 'TimestampIs_month_start', 'TimestampIs_quarter_end',
+'TimestampIs_quarter_start','TimestampIs_year_end', 'TimestampIs_year_start']
+
+contin_vars = ['Open', 'Close','High', 'Low', 'Volume', 'TimestampElapsed',
+'volume_adi','volume_obv','volume_obvm','volume_cmf','volume_fi','volume_em','volume_vpt','volume_nvi',
+'volatility_atr','volatility_bbh','volatility_bbl','volatility_bbm','volatility_bbhi','volatility_bbli',
+'volatility_kcc','volatility_kch','volatility_kcl','volatility_kchi','volatility_kcli','volatility_dch',
+'volatility_dcl','volatility_dchi','volatility_dcli','trend_macd','trend_macd_signal','trend_macd_diff',
+'trend_ema_fast','trend_ema_slow','trend_adx','trend_adx_pos','trend_adx_neg','trend_adx_ind','trend_vortex_ind_pos',
+'trend_vortex_ind_neg','trend_vortex_diff','trend_trix','trend_mass_index','trend_cci','trend_dpo','trend_kst',
+'trend_kst_sig','trend_kst_diff','trend_ichimoku_a','trend_ichimoku_b'
+,'trend_aroon_up','trend_aroon_down','trend_aroon_ind','momentum_rsi','momentum_mfi','momentum_tsi'
+,'momentum_uo','momentum_stoch','momentum_stoch_signal','momentum_wr','momentum_ao','others_dr','others_dlr','others_cr'
+,'sma5','sma15','sma30','sma60','sma90'
+,'1Open','1High','1Low','1Close','1Volume','2Open','2High','2Low','2Close','2Volume'
+,'3Open','3High','3Low','3Close','3Volume','4Open','4High','4Low','4Close','4Volume'
+,'5Open','5High','5Low','5Close','5Volume','6Open','6High','6Low','6Close','6Volume'
+,'7Open','7High','7Low','7Close','7Volume','8Open','8High','8Low','8Close','8Volume','9Open','9High','9Low'
+,'9Close','9Volume','10Open','10High','10Low','10Close','10Volume','11Open','11High','11Low','11Close','11Volume'
+,'12Open','12High','12Low','12Close','12Volume','13Open','13High','13Low','13Close','13Volume'
+,'14Open','14High','14Low','14Close','14Volume','15Open','15High','15Low','15Close','15Volume'
+,'16Open','16High','16Low','16Close','16Volume','17Open','17High','17Low','17Close','17Volume'
+,'18Open','18High','18Low','18Close','18Volume','19Open','19High','19Low','19Close','19Volume'
+,'20Open','20High','20Low','20Close','20Volume','21Open','21High','21Low','21Close','21Volume'
+,'22Open','22High','22Low','22Close','22Volume','23Open','23High','23Low','23Close','23Volume'
+,'24Open','24High','24Low','24Close','24Volume','25Open','25High','25Low','25Close','25Volume'
+,'26Open','26High','26Low','26Close','26Volume','27Open','27High','27Low','27Close','27Volume'              
+]
+
+len(cat_vars),len(contin_vars)
+
+
 # ## Create datasets
 
-# In[192]:
+# In[324]:
 
 
 table_names = [
@@ -484,35 +522,35 @@ table_names = [
 ]
 
 
-# In[193]:
+# In[325]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[194]:
+# In[326]:
 
 
 for t in tables: display(t.head())
 
 
-# In[195]:
+# In[327]:
 
 
 train= tables[0]
 
 
-# In[196]:
+# In[328]:
 
 
-# train = train.head(1600000)
+# train = train.head(1700000)
 p = StockPredictor(train, index)
 p.sample_train(recordsCount)
 
 
 # ## Data Cleaning
 
-# In[197]:
+# In[329]:
 
 
 p.set_date_as_index_unix()
@@ -522,7 +560,7 @@ p.train.head()
 
 # ## Join Bitstamp
 
-# In[198]:
+# In[330]:
 
 
 # bitstamp= tables[1].tail(recordsCount)
@@ -535,7 +573,7 @@ p.train.head()
 # p.train = pd.concat([bitstampExtract, p.train], axis=1)
 
 
-# In[199]:
+# In[331]:
 
 
 # valpred = valpred.reset_index(drop=True)
@@ -546,13 +584,13 @@ p.train.head()
 
 # ## Feature Engineering
 
-# In[200]:
+# In[332]:
 
 
 p.set_target('Close',lookahead, percentIncrease)
 
 
-# In[201]:
+# In[333]:
 
 
 # add technical analysis
@@ -560,7 +598,7 @@ p.add_ta()
 p.clean_train()
 
 
-# In[202]:
+# In[334]:
 
 
 p.add_date_values()
@@ -569,19 +607,19 @@ p.trim_ends(100,100)
 
 # ## Split validation and test sets
 
-# In[203]:
+# In[335]:
 
 
 p.split_test_train(test_ratio)
 
 
-# In[204]:
+# In[336]:
 
 
-p.train.head()
+# p.train.head()
 
 
-# In[205]:
+# In[337]:
 
 
 p.train.tail(50).T.head(100)
@@ -589,97 +627,34 @@ p.train.tail(50).T.head(100)
 
 # ## Create features
 
-# Identify categorical vs continuous variables
-
-# In[206]:
+# In[338]:
 
 
-cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
-'TimestampDayofyear','TimestampIs_month_end', 'TimestampIs_month_start', 'TimestampIs_quarter_end',
-'TimestampIs_quarter_start','TimestampIs_year_end', 'TimestampIs_year_start']
-
-# 'BitstampClose',
-
-contin_vars = ['Open', 'Close','High', 'Low', 'Volume', 'TimestampElapsed',
-'volume_adi','volume_obv','volume_obvm','volume_cmf','volume_fi','volume_em','volume_vpt','volume_nvi',
-'volatility_atr','volatility_bbh','volatility_bbl','volatility_bbm','volatility_bbhi','volatility_bbli',
-'volatility_kcc','volatility_kch','volatility_kcl','volatility_kchi','volatility_kcli','volatility_dch',
-'volatility_dcl','volatility_dchi','volatility_dcli','trend_macd','trend_macd_signal','trend_macd_diff',
-'trend_ema_fast','trend_ema_slow','trend_adx','trend_adx_pos','trend_adx_neg','trend_adx_ind','trend_vortex_ind_pos',
-'trend_vortex_ind_neg','trend_vortex_diff','trend_trix','trend_mass_index','trend_cci','trend_dpo','trend_kst',
-'trend_kst_sig','trend_kst_diff','trend_ichimoku_a','trend_ichimoku_b'
-,'trend_aroon_up','trend_aroon_down','trend_aroon_ind','momentum_rsi','momentum_mfi','momentum_tsi',
-'momentum_uo','momentum_stoch','momentum_stoch_signal','momentum_wr','momentum_ao','others_dr','others_dlr','others_cr'
-,'maxc5','maxc15','maxc30','maxc60','maxc90','maxh5','maxh15','maxh30','maxh60','maxh90'
-,'sma5','sma15','sma30','sma60','sma90','minc5','minc15','minc30','minc60','minc90'
-,'1Open','1High','1Low','1Close','1Volume','2Open','2High','2Low','2Close','2Volume','3Open','3High','3Low','3Close','3Volume'
-,'4Open','4High','4Low','4Close','4Volume','5Open','5High','5Low','5Close','5Volume','6Open','6High','6Low','6Close','6Volume'
-,'7Open','7High','7Low','7Close','7Volume','8Open','8High','8Low','8Close','8Volume','9Open','9High','9Low','9Close','9Volume'
-,'10Open','10High','10Low','10Close','10Volume','11Open','11High','11Low','11Close','11Volume',
-'12Open','12High','12Low','12Close','12Volume'
-]
-
-p.test = p.test.set_index('Timestamp')
-p.train = p.train.set_index('Timestamp')
-
-len(contin_vars),len(contin_vars) -5
-
-
-# In[207]:
-
-
-p.train = p.train[cat_vars+contin_vars+[dep]].copy()
-p.test = p.test[cat_vars+contin_vars+[dep]].copy()
-
-
-# In[208]:
-
-
-for v in cat_vars: 
-    p.train[v] = p.train[v].astype('category').cat.as_ordered()
-    p.test[v] = p.test[v].astype('category').cat.as_ordered()
-
-
-# In[209]:
-
-
+p.apply_variable_types(cat_vars, contin_vars, dep)
 apply_cats(p.test, p.train)
 
 
-# In[210]:
-
-
-for v in contin_vars:
-    p.train[v] = p.train[v].astype('float32')
-    p.test[v] = p.test[v].astype('float32')
-
-
-# In[211]:
+# In[339]:
 
 
 df, y, nas, mapper = proc_df(p.train, dep, do_scale=True)
 
 
-# In[212]:
+# In[340]:
 
 
 df_test, _, nas, mapper = proc_df(p.test, dep, do_scale=True, mapper=mapper, na_dict=nas)
-p.train.head(30).T.head(70)
-
-
-# In[213]:
-
-
 nas={}
+# p.train.head(30).T.head(70)
 
 
-# In[214]:
+# In[341]:
 
 
 df.head(2)
 
 
-# In[215]:
+# In[342]:
 
 
 df_test.head(2)
@@ -687,7 +662,7 @@ df_test.head(2)
 
 # Rake the last x% of rows as our validation set.
 
-# In[216]:
+# In[343]:
 
 
 train_size = p.get_train_size(train_ratio)
@@ -698,7 +673,7 @@ val_idx = p.get_validation_indexes(train_size, df)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).
 
-# In[217]:
+# In[344]:
 
 
 md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=64,
@@ -707,7 +682,7 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 
 # Some categorical variables have a lot more levels than others.
 
-# In[218]:
+# In[345]:
 
 
 cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
@@ -715,19 +690,19 @@ cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
 
 # We use the *cardinality* of each variable (that is, its number of unique values) to decide how large to make its *embeddings*. Each level will be associated with a vector with length defined as below.
 
-# In[219]:
+# In[346]:
 
 
 emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 
 
-# In[220]:
+# In[347]:
 
 
 cont_size = len(df.columns)-len(cat_vars)
 
 
-# In[221]:
+# In[348]:
 
 
 # m = md.get_learner(emb_szs, cont_size,dropout, 2, [100,50], [0.03,0.06],None,True)
@@ -737,38 +712,38 @@ dropout_later_layers= [0.01,0.1]
 m = md.get_learner(emb_szs, cont_size,dropout, 2, activations,dropout_later_layers ,None,True)
 
 
-# In[222]:
+# In[349]:
 
 
 m.lr_find()
 m.sched.plot(100)
 
 
-# In[223]:
+# In[350]:
 
 
 m.fit(lr, 3)
 
 
-# In[224]:
+# In[351]:
 
 
 m.fit(lr, 5, cycle_len=1)
 
 
-# In[225]:
+# In[352]:
 
 
-m.fit(lr, 3, cycle_len=4, cycle_mult=2 )
+# m.fit(lr, 3, cycle_len=4, cycle_mult=2 )
 
 
-# In[226]:
+# In[353]:
 
 
 m.save(modelName)
 
 
-# In[227]:
+# In[354]:
 
 
 m.load(modelName)
@@ -776,13 +751,13 @@ m.load(modelName)
 
 # ## Validation
 
-# In[228]:
+# In[355]:
 
 
-(x,y1)=m.predict_with_targs()
+(x,yl)=m.predict_with_targs()
 
 
-# In[229]:
+# In[356]:
 
 
 val = p.train.iloc[val_idx]
@@ -798,26 +773,26 @@ valpred
 
 # Calculate the percent accuracy on the validation set
 
-# In[230]:
+# In[357]:
 
 
 p.calculate_accuracy(valpred)
 
 
-# In[231]:
+# In[358]:
 
 
 p.calculate_net_profit(valpred, 15000, 0)
 p.result
 
 
-# In[232]:
+# In[359]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[233]:
+# In[360]:
 
 
 p.net_profit_df
@@ -825,13 +800,13 @@ p.net_profit_df
 
 # ## Test
 
-# In[234]:
+# In[361]:
 
 
 np.argmax(m.predict(True), axis =1)
 
 
-# In[256]:
+# In[362]:
 
 
 testPred = pd.DataFrame({
@@ -843,39 +818,47 @@ testPred = pd.DataFrame({
 testPred.head(10)
 
 
-# In[259]:
+# In[363]:
 
 
 p.calculate_accuracy(testPred)
 
 
-# In[260]:
+# In[364]:
 
 
 p.calculate_net_profit(testPred, 15000, 0)
 p.result
 
 
-# In[238]:
+# In[365]:
 
 
 p.net_profit_df
 
 
-# In[239]:
+# In[366]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[240]:
+# ## Single Prediction
+# 
+
+# In[367]:
 
 
-list(p.train.columns.values)
+df_row = df_test.tail(10) # last row
+prediciton = m.predict_array(df_row[cat_vars], df_row[contin_vars])
+prediciton, np.argmax(prediciton, axis=1)
 
 
-# In[ ]:
+# ## Playground
+
+# In[368]:
 
 
-
+# list(p.train.columns.values)
+# m.crit
 
