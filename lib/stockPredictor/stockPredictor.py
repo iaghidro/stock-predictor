@@ -77,15 +77,14 @@ class StockPredictor:
         print('Validation Index size: ' + str(len(validation_indexes)))
         return validation_indexes
 
-    def apply_variable_types(self, cat_vars, contin_vars, dep):
-        self.train = self.train[cat_vars + contin_vars + [dep]].copy()
-        self.test = self.test[cat_vars + contin_vars + [dep]].copy()
-        for v in cat_vars: 
-            self.train[v] = self.train[v].astype('category').cat.as_ordered()
-            self.test[v] = self.test[v].astype('category').cat.as_ordered()
+    def apply_variable_types(self, df, cat_vars, contin_vars, dep):
+        dep_array = [] if dep is None else [dep]
+        df = df[cat_vars + contin_vars + dep_array].copy()
+        for v in cat_vars:
+            df[v] = df[v].astype('category').cat.as_ordered()
         for v in contin_vars:
-            self.train[v] = self.train[v].astype('float32')
-            self.test[v] = self.test[v].astype('float32')
+            df[v] = df[v].astype('float32')
+        return df
 
     # ///////////////////////////////
     # //// FEATURE ENGINEERING //////
