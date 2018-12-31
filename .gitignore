@@ -14,3 +14,4 @@
 playground/bitstamp_07-09.csv
 data/*
 notebook-files/.ipynb_checkpoints/*
+inference-data/**/*
