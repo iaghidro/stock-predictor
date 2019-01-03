@@ -2,6 +2,12 @@ import json as js
 import numpy as np
 import pandas as pd
 from ta import *
+try:
+    from fastai.imports import *
+    from fastai.structured import *
+    from fastai.column_data import *
+except ImportError:
+    print('*** Failed importing fast.ai modules ***')
 
 
 class StockPredictor:

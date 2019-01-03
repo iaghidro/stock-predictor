@@ -186,18 +186,22 @@ def transformation():
     """Do an inference on the last record of the historical data"""
     print('invocations: body')
 
-    body = flask.request.stream
-    print(body)
+    # body = dir(flask.request.json)
+    # print("body: {}".format(body))
 
-    train = ClassificationService.get_data()
+    train = get_data()
     predict_df = train.head(1700000)
+    print("make prediction")
 
     # Do the prediction on the body
     raw_prediction, prediction = ClassificationService.predict(predict_df)
 
+    print("format prediction")
+
     # Convert result to JSON
-    result = {'result': {}}
-    result['result']['raw_prediction'] = raw_prediction
-    result['result']['prediction'] = prediction
+    result = {'result': {'raw': {}}}
+    result['result']['raw']['sell'] = str(raw_prediction[0][0])
+    result['result']['raw']['buy'] = str(raw_prediction[0][1])
+    result['result']['prediction'] = str(prediction[0])
 
     return flask.Response(response=json.dumps(result), status=200, mimetype='application/json')
