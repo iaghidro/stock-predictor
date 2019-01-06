@@ -1,50 +1,45 @@
 {
-  "name"                    : "stock-predictor",
-  "version"                 : "1.0.0",
-  "author"                  : "Istvan Ghidro",
-  "license"                 : "UNLICENSED",
-  "repository" : { 
-        "type"              : "git",
-        "url"               : "https://github.com/iaghidro/stock-predictor.git"
+  "name": "stock-predictor",
+  "version": "1.0.0",
+  "author": "Istvan Ghidro",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iaghidro/stock-predictor.git"
   },
-  "contributors"            : [],
+  "contributors": [],
   "scripts": {
-    "test"                  : "mocha --recursive",
-    "test:grep"             : "mocha --recursive -g",
-    "test:p"                : "cd /app/lib && py.test -s -vv",
-        
-    "trainModel"            : "node scripts/trainModel.js",
-    "predict"               : "node scripts/predict.js",
-    
-    "playground"            : "python3 playground/playground.py",
-    
-    "fetch:data"            : "node scripts/fetchData.js",
-
-    "jupyter"               : "jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root"
-        
+    "test": "mocha --recursive",
+    "test:grep": "mocha --recursive -g",
+    "test:p": "cd /app/lib && py.test -s -vv",
+    "trainModel": "node scripts/trainModel.js",
+    "predict": "node scripts/predict.js",
+    "playground": "python3 playground/playground.py",
+    "fetch:data": "node scripts/fetchData.js",
+    "jupyter": "jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root"
   },
   "dependencies": {
-    "crypto-wallet"         : "git+https://github.com/iaghidro/crypto-wallet.git",
-    "async"                 : "2.5.0",
-    "big.js"                : "3.1.3",
-    "child-process-promise" : "2.2.1",
-    "joi"                   : "10.6.0",
-    "moment"                : "2.19.3",
-    "aws-sdk"               : "2.167.0",
-    "lodash"                : "4.17.4",
-    "create-file"           : "1.0.1",
-    "axios"                 : "0.17.1",
-    "json2csv"              : "3.11.5",
-    "technicalindicators"   : "1.1.11",
-    "tdsequential"          : "1.0.14",
-    "trend"                 : "0.3.0"
+    "crypto-wallet": "git+https://github.com/iaghidro/crypto-wallet.git",
+    "async": "2.5.0",
+    "big.js": "3.1.3",
+    "child-process-promise": "2.2.1",
+    "joi": "10.6.0",
+    "moment": "2.19.3",
+    "aws-sdk": "2.167.0",
+    "lodash": "4.17.4",
+    "create-file": "1.0.1",
+    "axios": "0.17.1",
+    "json2csv": "3.11.5",
+    "technicalindicators": "1.1.11",
+    "tdsequential": "1.0.14",
+    "trend": "0.3.0"
   },
   "devDependencies": {
-    "mocha"                 : "3.1.2",
-    "should"                : "11.1.1",
-    "chai"                  : "3.5.0",
-    "sinon"                 : "1.17.6",
-    "sinon-as-promised"     : "4.0.2",
-    "sinon-chai"            : "2.8.0"
+    "mocha": "3.1.2",
+    "should": "11.1.1",
+    "chai": "3.5.0",
+    "sinon": "1.17.6",
+    "sinon-as-promised": "4.0.2",
+    "sinon-chai": "2.8.0"
   }
 }

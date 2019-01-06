@@ -19,6 +19,7 @@ from fastai.column_data import *
 from stockPredictor import StockPredictor
 
 index = 'Timestamp'
+index_predict = 'timestamp'
 lookahead = 15
 percentIncrease = 1.002
 recordsCount = 80000
@@ -114,13 +115,13 @@ def create_model(start_df):
 def transform_predict_data(historical_json):
     # Create predictor
     historical_df = pd.read_json(historical_json, orient='list')
-    p = StockPredictor(historical_df, index)
+    p = StockPredictor(historical_df, index_predict)
     p.sample_train(100)
 
     # Data Cleaning
     p.set_date_as_index_unix()
-    p.normalize_train('Volume', 'Open', 'High',
-                      'Low', 'Close', 'Weighted_Price')
+    p.normalize_train('volume', 'open', 'high',
+                      'low', 'close', 'weightedPrice')
 
     # Feature Engineering
     p.add_ta()
@@ -186,7 +187,7 @@ def ping():
 def transformation():
     """Do an inference on the last record of the historical data"""
     print('INVOCATIONS - BEGIN')
-    
+
     body = flask.request.data
     print("body: {}".format(str(body)))
 
