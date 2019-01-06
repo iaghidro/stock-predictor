@@ -111,14 +111,15 @@ def create_model(start_df):
     return m
 
 
-def transform_predict_data(start_df):
+def transform_predict_data(historical_json):
     # Create predictor
-    p = StockPredictor(start_df, index)
+    historical_df = pd.read_json(historical_json, orient='list')
+    p = StockPredictor(historical_df, index)
     p.sample_train(100)
 
     # Data Cleaning
     p.set_date_as_index_unix()
-    p.normalize_train('Volume_(BTC)', 'Open', 'High',
+    p.normalize_train('Volume', 'Open', 'High',
                       'Low', 'Close', 'Weighted_Price')
 
     # Feature Engineering
@@ -157,10 +158,10 @@ class ClassificationService(object):
         return cls.model
 
     @classmethod
-    def predict(cls, predict_df):
+    def predict(cls, historical_json):
         """For the input, do the predictions and return them."""
         model = cls.get_model()
-        transformed = transform_predict_data(predict_df)
+        transformed = transform_predict_data(historical_json)
         raw_prediction = model.predict_array(
             transformed[cat_vars], transformed[contin_vars])
         return raw_prediction, np.argmax(raw_prediction, axis=1)
@@ -184,21 +185,15 @@ def ping():
 @app.route('/invocations', methods=['POST'])
 def transformation():
     """Do an inference on the last record of the historical data"""
-    print('invocations: body')
+    print('INVOCATIONS - BEGIN')
+    
+    body = flask.request.data
+    print("body: {}".format(str(body)))
 
-    # body = dir(flask.request.json)
-    # print("body: {}".format(body))
-
-    train = get_data()
-    predict_df = train.head(1700000)
     print("make prediction")
-
-    # Do the prediction on the body
-    raw_prediction, prediction = ClassificationService.predict(predict_df)
+    raw_prediction, prediction = ClassificationService.predict(body)
 
     print("format prediction")
-
-    # Convert result to JSON
     result = {'result': {'raw': {}}}
     result['result']['raw']['sell'] = str(raw_prediction[0][0])
     result['result']['raw']['buy'] = str(raw_prediction[0][1])
