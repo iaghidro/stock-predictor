@@ -22,11 +22,11 @@ index = 'Timestamp'
 index_predict = 'timestamp'
 lookahead = 15
 percentIncrease = 1.002
-recordsCount = 80000
-test_ratio = 0.95
+recordsCount = 465155
+test_ratio  = 0.95
 train_ratio = 0.95
 lr = 1e-4
-dropout = 0.01
+dropout = 0.04
 modelName = 'btcBinaryClassificationModel'
 dep = 'action'
 PATH = '/opt/ml/'
@@ -59,37 +59,15 @@ contin_vars = ['Open', 'Close', 'High', 'Low', 'Volume', 'TimestampElapsed',
                '27High', '27Low', '27Close', '27Volume'
                ]
 
-table_names = [
-    'coinbaseUSD_1-min_data_2014-12-01_to_2018-06-27',
-]
+def create_model():
+    print("Create predictor")
+    p = StockPredictor(pd.DataFrame(), index)
+    p.read_from_feather(PATH)
 
-
-def get_data():
-    tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False)
-              for fname in table_names]
-    return tables[0]
-
-
-def create_model(start_df):
-    # Create predictor
-    p = StockPredictor(start_df, index)
-    p.sample_train(recordsCount)
-
-    # Data Cleaning
-    p.set_date_as_index_unix()
-    p.normalize_train('Volume_(BTC)', 'Open', 'High',
-                      'Low', 'Close', 'Weighted_Price')
-
-    # Feature Engineering
-    p.add_ta()
-    p.clean_train()
-    p.set_target('Close', lookahead, percentIncrease)
-    p.add_date_values()
-
-    # Split validation and test sets
+    print("Split validation and test sets")
     p.split_test_train(test_ratio)
 
-    # Create features
+    print("Create features")
     p.train = p.apply_variable_types(p.train, cat_vars, contin_vars, dep)
     p.test = p.apply_variable_types(p.test, cat_vars, contin_vars, dep)
     apply_cats(p.test, p.train)
@@ -98,7 +76,7 @@ def create_model(start_df):
     train_size = p.get_train_size(train_ratio)
     val_idx = p.get_validation_indexes(train_size, df)
 
-    # DL
+    print("Create model")
     md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=64,
                                            is_reg=False, is_multi=False)
     cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
@@ -126,7 +104,7 @@ def transform_predict_data(historical_json):
     # Feature Engineering
     p.add_ta()
     p.clean_train()
-    p.set_target('Close', lookahead, percentIncrease)  # todo: may not need
+    p.set_target('Close', lookahead, percentIncrease)
     p.add_date_values()
 
     # Create features
@@ -141,21 +119,14 @@ def transform_predict_data(historical_json):
 
 class ClassificationService(object):
     model = None                # Where we keep the model when it's loaded
-    data = None              # Where we keep the data classes object
-
-    @classmethod
-    def get_data(cls):
-        """Get the data class if not already loaded."""
-        if cls.data == None:
-            cls.data = get_data()
-        return cls.data
 
     @classmethod
     def get_model(cls):
         """Get the model object for this instance, loading it if it's not already loaded."""
         if cls.model == None:
-            data = cls.get_data()
-            cls.model = create_model(data)
+            cls.model = create_model()
+
+        print("Finished fetching model")
         return cls.model
 
     @classmethod
@@ -170,7 +141,6 @@ class ClassificationService(object):
 
 # The flask app for serving predictions
 app = flask.Flask(__name__)
-
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -201,3 +171,7 @@ def transformation():
     result['result']['prediction'] = str(prediction[0])
 
     return flask.Response(response=json.dumps(result), status=200, mimetype='application/json')
+
+
+# Invoke model
+ClassificationService.get_model()

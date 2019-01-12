@@ -402,11 +402,11 @@ class StockPredictor:
 
     def save_to_feather(self, path):
         self.train.reset_index(inplace=True)
-        self.train.to_feather(f'{PATH}train')
+        self.train.to_feather(f'{path}historical_parsed')
 
-    def read_from_feather(self, PATH):
-        self.train = pd.read_feather(f'{PATH}train')
-        # train.drop(self.index,1,inplace=True)
+    def read_from_feather(self, path):
+        self.train = pd.read_feather(f'{path}historical_parsed')
+        self.set_date_as_index()
 
     """ usage conflateTimeFrame(df, '5T') """
 
