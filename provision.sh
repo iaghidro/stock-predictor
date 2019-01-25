@@ -7,6 +7,7 @@ apt install -y ipython3
 
 pip3 install pytest
 pip3 install ta
+pip3 install sklearn
 pip3 install pandas
 pip3 install jupyter
 pip3 install -U feather-format

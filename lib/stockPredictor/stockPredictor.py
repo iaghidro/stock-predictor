@@ -1,7 +1,11 @@
 import json as js
 import numpy as np
 import pandas as pd
-from ta import *
+import matplotlib.pyplot as plt
+try:
+    from ta import *
+except ImportError:
+    print('*** Failed importing TA ***')
 try:
     from fastai.imports import *
     from fastai.structured import *
@@ -9,6 +13,11 @@ try:
 except ImportError:
     print('*** Failed importing fast.ai modules ***')
 
+try:
+    from sklearn.metrics import classification_report
+    from sklearn.metrics import confusion_matrix
+except ImportError:
+    print('*** Failed importing sklearn ***')
 
 class StockPredictor:
 
@@ -156,13 +165,14 @@ class StockPredictor:
         sell_count = str(len(self.train[self.train.action == 0]))
         print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
 
-    def set_target_hold(self, target, lookahead, percentIncrease):
+    def set_target_hold(self, target, lookahead, percentIncrease, percentDecrease):
         self.train['action'] = 0
         max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
-        self.train.loc[max_lookahead > self.train['Close'], 'action'] = 1
+        self.train.loc[max_lookahead > percentDecrease *
+                       self.train['Close'], 'action'] = 1
         self.train.loc[max_lookahead > percentIncrease *
                        self.train['Close'], 'action'] = 2
-        self.train.action = self.train.action.astype(np.float32)
+        self.train.action = self.train.action.astype(int)
         sell_count = str(len(self.train[self.train.action == 0]))
         hold_count = str(len(self.train[self.train.action == 1]))
         buy_count = str(len(self.train[self.train.action == 2]))
@@ -396,16 +406,21 @@ class StockPredictor:
         self.net_profit_df = df
         self.result = result
 
+    def confusion_matrix(self, actual, predicted, target_names, target):
+        # print(classification_report(actual, predicted, target_names=target_names))
+        cm = confusion_matrix(actual, predicted)
+        plot_confusion_matrix(cm, target)
+
     # ///////////////////////////////
     # /////////// UTIL //////////////
     # ///////////////////////////////
 
     def save_to_feather(self, path):
         self.train.reset_index(inplace=True)
-        self.train.to_feather(f'{path}historical_parsed')
+        self.train.to_feather(path + 'historical_parsed')
 
     def read_from_feather(self, path):
-        self.train = pd.read_feather(f'{path}historical_parsed')
+        self.train = pd.read_feather(path + 'historical_parsed')
         self.set_date_as_index()
 
     """ usage conflateTimeFrame(df, '5T') """
@@ -428,3 +443,38 @@ class StockPredictor:
             style='o',
             figsize=(10, 5),
             grid=True)
+
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()

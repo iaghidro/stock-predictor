@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[72]:
+# In[125]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -14,23 +14,7 @@ get_ipython().run_line_magic('autoreload', '2')
 # ## Stock Predictor Lib
 # 
 
-# In[73]:
-
-
-def PredtoClass(a):
-    pred_class = []
-    for i in range(len(a)):
-        if a[i]<.3:
-            pred_class.append(0)
-        else:
-            pred_class.append(1)
-    return pred_class
-
-def accuracy_rf(preds, y_val):
-    return  sum(1- abs(PredtoClass(preds) - y_val))/len(y_val)
-
-
-# In[74]:
+# In[126]:
 
 
 import json as js
@@ -508,7 +492,7 @@ def plot_confusion_matrix(cm, classes,
 # ## Config
 # 
 
-# In[75]:
+# In[127]:
 
 
 from fastai.structured import *
@@ -519,7 +503,7 @@ from IPython.display import HTML
 from IPython.core.display import display
 
 
-# In[76]:
+# In[128]:
 
 
 pd.set_option('display.max_columns', 100)
@@ -527,19 +511,19 @@ pd.set_option('display.max_rows', 100)
 
 index='Timestamp'
 # index='time_period_start'
-lookahead = 15
-percentIncrease = 1.002
+lookahead = 20
+percentIncrease = 1.001
 recordsCount = 80000
 test_ratio  = 0.95
 train_ratio = 0.95
-lr = 1e-3
+lr = 1e-4
 dropout = 0.04
 modelName = 'btcBinaryClassificationModel'
 dep = 'action'
 PATH='data/stock/'
 
 
-# In[77]:
+# In[129]:
 
 
 cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
@@ -577,38 +561,38 @@ len(cat_vars),len(contin_vars)
 
 # ## Create datasets
 
-# In[78]:
+# In[130]:
 
 
 table_names = [
-    'coinbaseUSD_1-min_data_2014-12-01_to_2018-06-27',
-#     'coinbaseUSD_1-min_data_2014-12-01_to_2018-11-11',
+#     'coinbaseUSD_1-min_data_2014-12-01_to_2018-06-27',
+    'coinbaseUSD_1-min_data_2014-12-01_to_2018-11-11',
 #     'bitstampUSD_1-min_data_2012-01-01_to_2018-06-27',
 #     'btc-bitstamp-2012-01-01_to_2018-01-08'
 #         'BTC_COINBASE_2018-07-25_09-06'
-#         'ETH_COINBASE_07-21_08-24'
+#         'ETH_COINBASE_07-21_08- 24'
 ]
 
 
-# In[79]:
+# In[131]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[80]:
+# In[132]:
 
 
 for t in tables: display(t.head())
 
 
-# In[81]:
+# In[133]:
 
 
 train= tables[0]
 
 
-# In[82]:
+# In[134]:
 
 
 # train = train.head(1700000)
@@ -618,7 +602,7 @@ p.sample_train(recordsCount)
 
 # ## Data Cleaning
 
-# In[83]:
+# In[135]:
 
 
 p.set_date_as_index_unix()
@@ -628,33 +612,9 @@ p.normalize_train('Volume_(BTC)','Open','High','Low','Close', 'Weighted_Price')
 p.train.head()
 
 
-# ## Join Bitstamp
-
-# In[84]:
-
-
-# bitstamp= tables[1].tail(recordsCount)
-# bitstamp[index] = pd.to_datetime(bitstamp[index], unit='s')
-# bitstampExtract = pd.DataFrame({
-#     'BitstampTimestamp':bitstamp.Timestamp,
-#     'BitstampClose':bitstamp.Close,
-# })[[ 'BitstampTimestamp','BitstampClose']] 
-# bitstampExtract = bitstampExtract.reset_index(drop=True)
-# p.train = pd.concat([bitstampExtract, p.train], axis=1)
-
-
-# In[85]:
-
-
-# valpred = valpred.reset_index(drop=True)
-# train = train.set_index(pd.DatetimeIndex(train[index]))
-# p.train = p.conflate_time_frame(p.train, '5T')
-# len(train)
-
-
 # ## Feature Engineering
 
-# In[86]:
+# In[136]:
 
 
 # add technical analysis
@@ -662,20 +622,20 @@ p.add_ta()
 p.clean_train()
 
 
-# In[87]:
+# In[137]:
 
 
-p.set_target('Close',lookahead, percentIncrease)
+p.set_target_hold('Close',lookahead, percentIncrease, 1)
 
 
-# In[88]:
+# In[138]:
 
 
 p.add_date_values()
 p.trim_ends(100,100)
 
 
-# In[89]:
+# In[139]:
 
 
 # p.train.to_csv(f'{PATH}btc_historical_parsed.csv', sep=',', encoding='utf-8')
@@ -686,19 +646,19 @@ p.train
 
 # ## Split validation and test sets
 
-# In[90]:
+# In[140]:
 
 
 p.split_test_train(test_ratio)
 
 
-# In[91]:
+# In[141]:
 
 
 # p.train.head()
 
 
-# In[92]:
+# In[142]:
 
 
 p.train.tail(50).T.head(100)
@@ -706,7 +666,7 @@ p.train.tail(50).T.head(100)
 
 # ## Create features
 
-# In[93]:
+# In[143]:
 
 
 p.train = p.apply_variable_types(p.train, cat_vars, contin_vars, dep)
@@ -714,13 +674,13 @@ p.test = p.apply_variable_types(p.test, cat_vars, contin_vars, dep)
 apply_cats(p.test, p.train)
 
 
-# In[94]:
+# In[144]:
 
 
 df, y, nas, mapper = proc_df(p.train, dep, do_scale=True)
 
 
-# In[95]:
+# In[145]:
 
 
 df_test, _, nas, mapper = proc_df(p.test, dep, do_scale=True, mapper=mapper, na_dict=nas)
@@ -728,13 +688,13 @@ nas={}
 # p.train.head(30).T.head(70)
 
 
-# In[96]:
+# In[146]:
 
 
 df.head(2)
 
 
-# In[97]:
+# In[147]:
 
 
 df_test.head(2)
@@ -742,7 +702,7 @@ df_test.head(2)
 
 # Rake the last x% of rows as our validation set.
 
-# In[98]:
+# In[148]:
 
 
 train_size = p.get_train_size(train_ratio)
@@ -753,16 +713,17 @@ val_idx = p.get_validation_indexes(train_size, df)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).
 
-# In[99]:
+# In[149]:
 
 
-md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=512,
+# y = y.reshape(len(y),1)
+md = ColumnarModelData.from_data_frame(PATH, val_idx, df,y.astype('int'), cat_flds=cat_vars, bs=128,
                                       is_reg=False,is_multi=False,test_df=df_test)
 
 
 # Some categorical variables have a lot more levels than others.
 
-# In[100]:
+# In[150]:
 
 
 cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
@@ -770,27 +731,22 @@ emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 cont_size = len(df.columns)-len(cat_vars)
 
 
-# In[101]:
+# In[151]:
 
 
-# m = md.get_learner(emb_szs, cont_size,dropout, 2, [100,50], [0.03,0.06],None,True)
 activations=[500,100]
-# todo: play with drop out layers
 dropout_later_layers= [0.01,0.1] 
-m = md.get_learner(emb_szs, cont_size,dropout, 2, activations,dropout_later_layers ,None,True)
+m = md.get_learner(emb_szs, cont_size,dropout, 3, activations,dropout_later_layers,None,True)
 
 from torch.nn import functional as F
 m.crit = F.cross_entropy
 
 
-# In[102]:
+# In[152]:
 
 
-m.lr_find()
-m.sched.plot(10)
-
-
-# In[103]:
+# def accuracy_multi(preds, targs, thresh=0.5):
+#     return ((preds>thresh).float()==targs).float().mean()
 
 
 # This is how the code looks in the 'metrics.py' in fastai library
@@ -800,31 +756,38 @@ def accuracy(preds, targs):
     return (preds==targs).float().mean()
 
 
-# In[104]:
+# In[153]:
 
 
-m.fit(lr, 3, metrics=[accuracy])
+m.lr_find()
+m.sched.plot(10)
 
 
-# In[105]:
+# In[154]:
 
 
-m.fit(lr, 5, cycle_len=1, metrics=[accuracy])
+m.fit(lr, 2, metrics=[accuracy])
 
 
-# In[106]:
+# In[155]:
+
+
+# m.fit(lr, 5, cycle_len=1, metrics=[accuracy])
+
+
+# In[156]:
 
 
 # m.fit(lr, 3, cycle_len=4, cycle_mult=2 , metrics=[accuracy])
 
 
-# In[107]:
+# In[157]:
 
 
 m.save(modelName)
 
 
-# In[108]:
+# In[158]:
 
 
 m.load(modelName)
@@ -832,13 +795,14 @@ m.load(modelName)
 
 # ## Validation
 
-# In[109]:
+# In[159]:
 
 
 (x,yl)=m.predict_with_targs()
+# x
 
 
-# In[110]:
+# In[160]:
 
 
 val = p.train.iloc[val_idx]
@@ -847,42 +811,84 @@ valpred = pd.DataFrame({
     'Close':val.Close,
     'index':val.index,
     'action':val.action,
-    'predicted':np.argmax(x,axis=1)
+    'predicted': np.argmax(x,axis=1),
 })[['Close','index', 'action','predicted']]
+# valpred
+
+
+sell_count = str(len(valpred[valpred.predicted == 0]))
+hold_count = str(len(valpred[valpred.predicted == 1]))
+buy_count = str(len(valpred[valpred.predicted == 2]))
+print('Buy count: ' + buy_count + ' Sell count: ' + sell_count + ' Hold count: ' + hold_count)
 valpred
 
 
 # Calculate the percent accuracy on the validation set
 
-# In[111]:
+# In[161]:
 
 
-p.calculate_accuracy(valpred)
+# p.calculate_accuracy_hold(valpred)
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+
+print(classification_report(valpred.action,
+                            valpred.predicted,
+                            target_names= ['0', '1', '2']))
+
+cm = confusion_matrix(valpred.action, valpred.predicted)
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+    
+plot_confusion_matrix(cm, [0, 1])
 
 
-# In[112]:
+# In[162]:
 
 
-# from sklearn.metrics import classification_report
-# print(classification_report(valpred.action,
-#                             valpred.predicted,
-#                             target_names= ['0', '1']))
-
-
-# In[113]:
-
-
-p.calculate_net_profit(valpred, 15000, 0)
+p.calculate_net_profit_hold(valpred, 15000, 0)
 p.result
 
 
-# In[114]:
+# In[163]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[115]:
+# In[164]:
 
 
 p.net_profit_df
@@ -890,13 +896,13 @@ p.net_profit_df
 
 # ## Test
 
-# In[116]:
+# In[165]:
 
 
 np.argmax(m.predict(True), axis =1)
 
 
-# In[117]:
+# In[166]:
 
 
 testPred = pd.DataFrame({
@@ -908,165 +914,49 @@ testPred = pd.DataFrame({
 testPred.head(10)
 
 
-# In[118]:
+# In[167]:
 
 
-p.calculate_accuracy(testPred)
+p.calculate_accuracy_hold(testPred)
 
 
-# In[119]:
+# In[168]:
 
 
-p.calculate_net_profit(testPred, 15000, 0)
+p.calculate_net_profit_hold(testPred, 15000, 0)
 p.result
 
 
-# In[120]:
+# In[169]:
 
 
 p.net_profit_df
 
 
-# In[121]:
+# In[170]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[122]:
+# ## Playground
+
+# In[171]:
 
 
-p.confusion_matrix(testPred.action,testPred.predicted, ['0', '1'], [0, 1])
+# list(p.train.columns.values)
+m.crit
 
 
-# ## Single Prediction
-# 
-
-# In[123]:
+# In[172]:
 
 
-df_row = df_test.tail(10) # last row
-prediciton = m.predict_array(df_row[cat_vars], df_row[contin_vars])
-# prediciton, np.argmax(prediciton, axis=1)
-
-
-# ## Random Forrest
-# 
-
-# In[133]:
-
-
-from sklearn.ensemble import RandomForestRegressor
-mrf = RandomForestRegressor(n_estimators=40, max_features=0.99, min_samples_leaf=2,
-                          n_jobs=-1, oob_score=True)
-mrf.fit(df.values, y);
-
-
-# In[140]:
-
-
-mrf.score(df_test.values,p.test[dep])
-
-
-# In[142]:
-
-
-preds = mrf.predict(df_test.values)
-
-
-# In[135]:
-
-
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
-
-
-# In[143]:
-
-
-testPred.predicted = PredtoClass(preds)
-p.calculate_accuracy(testPred)
-
-
-# In[145]:
-
-
-p.calculate_net_profit(testPred, 15000, 0)
-p.result
-
-
-# ## AdaBoost
-# 
-
-# In[136]:
-
-
-from sklearn.ensemble import AdaBoostClassifier
-ada = AdaBoostClassifier(random_state=1)
-ada.fit(df.values, y)
-
-
-# In[137]:
-
-
-ada.score(df_test.values,p.test[dep])
-
-
-# In[148]:
-
-
-preds = ada.predict(df_test.values)
-
-
-# In[146]:
-
-
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
-
-
-# In[149]:
-
-
-testPred.predicted = PredtoClass(preds)
-p.calculate_accuracy(testPred)
-
-
-# In[150]:
-
-
-p.calculate_net_profit(testPred, 15000, 0)
-p.result
-
-
-# ## Ensemble
-# 
-
-# In[158]:
-
-
-from sklearn.ensemble import VotingClassifier
-#create a dictionary of our models
-# , ('rnn', m)
-estimators=[('ada', ada), ('rf', mrf)]
-#create our voting classifier, inputting our models
-ensemble = VotingClassifier(estimators, voting='hard')
+# val_idx
+# y
 
 
 # In[ ]:
 
 
-#fit model to training data
-ensemble.fit(df.values, y)
-#test our model on the test data
-ensemble.score(df_test.values,p.test[dep])
 
-
-# In[ ]:
-
-
-preds = ada.predict(df_test.values)
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
-testPred.predicted = PredtoClass(preds)
-p.calculate_accuracy(testPred)
-p.calculate_net_profit(testPred, 15000, 0)
-p.result
 

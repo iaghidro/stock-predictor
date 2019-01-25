@@ -162,7 +162,9 @@ def test_add_historical_candles():
         '2Volume':  [np.nan, np.nan, 4.0, 5.0,  3.0],
     }
     expected_df = pd.DataFrame(data=expected_data)
-    assert p.df.equals(expected_df)
+    assert p.df.sort_index().sort_index(axis=1).equals(
+        expected_df.sort_index().sort_index(axis=1))
+
 
 def test_get_last_lookahead():
     p = create_predictor(trainData)
