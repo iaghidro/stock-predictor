@@ -7,3 +7,12 @@
 /nohup.out
 .DS_Store
 /ipassign.log
+/**/.pytest_cache/
+/**/stockPredictor/__pycache__/
+/lib/__pycache__/
+/lib/.cache/
+playground/bitstamp_07-09.csv
+data/*
+notebook-files/.ipynb_checkpoints/*
+inference-data/**/*
+package-lock.json

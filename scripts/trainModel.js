@@ -22,11 +22,11 @@ var trainModel = function () {
     });
     const params = {
         limit: 15000,
-        symbolId: "COINBASE_SPOT_ETH_USD",
-        startTime: new Date(Date.parse("2017-08-01T00:00:00.000Z")),
-        endTime: new Date(Date.parse("2018-02-24T00:00:00.000Z")),
-        period: "30MIN",
-        fakeData: true
+        symbolId: "COINBASE_SPOT_BTC_USD",
+        startTime: new Date(Date.parse("2018-08-10T00:00:00.000Z")),
+        endTime: null,//new Date(Date.parse("2018-02-24T00:00:00.000Z")),
+        period: "1MIN",
+        fakeData: false
     };
     trainer.trainForML(params)
             .then((response) => {

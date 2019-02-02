@@ -32,8 +32,14 @@ This script makes a prediction to the prediction endpoint with the data defined 
 
 1) run tests
 
+NodeJS
+
     npm test
+
+Python (cd into /lib directory then run this command)
+
+    npm run test:p
 
 2) grep for tests
 
-    npm run testGrep 'MyClass'
+    npm run test:grep 'MyClass'
