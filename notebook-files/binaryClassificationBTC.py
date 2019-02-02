@@ -3,7 +3,7 @@
 
 # # BTC Predictor
 
-# In[72]:
+# In[1]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -11,504 +11,10 @@ get_ipython().run_line_magic('reload_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# ## Stock Predictor Lib
-# 
-
-# In[73]:
-
-
-def PredtoClass(a):
-    pred_class = []
-    for i in range(len(a)):
-        if a[i]<.3:
-            pred_class.append(0)
-        else:
-            pred_class.append(1)
-    return pred_class
-
-def accuracy_rf(preds, y_val):
-    return  sum(1- abs(PredtoClass(preds) - y_val))/len(y_val)
-
-
-# In[74]:
-
-
-import json as js
-import numpy as np
-import pandas as pd
-from ta import *
-try:
-    from fastai.imports import *
-    from fastai.structured import *
-    from fastai.column_data import *
-except ImportError:
-    print('*** Failed importing fast.ai modules ***')
-
-try:
-    from sklearn.metrics import classification_report
-    from sklearn.metrics import confusion_matrix
-except ImportError:
-    print('*** Failed importing sklearn ***')
-
-class StockPredictor:
-
-    def __init__(self, df, index):
-        self.df = df
-        self.index = index
-
-    # ///////////////////////////////
-    # /////// DATA CLEANING /////////
-    # ///////////////////////////////
-
-    def sample_train(self, sampleSize):
-        self.train = self.df.iloc[-sampleSize:].copy()
-        print('Train size: ' + str(len(self.train)) +
-              ' Original size: ' + str(len(self.df)))
-
-    def set_date_as_index(self):
-        self.train.loc[:, self.index] = pd.to_datetime(
-            self.train[self.index]).copy()
-
-    def set_date_as_index_unix(self):
-        self.train.loc[:, self.index] = pd.to_datetime(
-            self.train[self.index], unit='s').copy()
-
-    def split_test_train(self, percent_split):
-        train_records_count = int(len(self.train) * percent_split)
-        test_records_count = int(len(self.train) * (1-percent_split))
-        self.test = self.train.tail(test_records_count)
-        self.train = self.train.head(train_records_count)
-        self.test = self.test.set_index('Timestamp')
-        self.train = self.train.set_index('Timestamp')
-        print('Train size: ' + str(len(self.train)) +
-              ' Test size: ' + str(len(self.test)))
-
-    def normalize_train(self, volume, open, high, low, close, weighted_price):
-        self.train = pd.DataFrame({
-            'Timestamp': self.train[self.index],
-            'Volume': self.train[volume],
-            'Open': self.train[open],
-            'High': self.train[high],
-            'Low': self.train[low],
-            'Close': self.train[close],
-            'Weighted_Price': self.train[weighted_price]
-        })[['Timestamp', 'Volume', 'Open', 'High', 'Low', 'Close', 'Weighted_Price']]
-
-    def clean_train(self):
-        self.train = self.train.replace([np.inf, -np.inf], np.nan)
-        self.train.fillna(method='ffill', inplace=True)
-        self.train.fillna(method='bfill', inplace=True)
-        print('Train size: ' + str(len(self.train)))
-
-    """ Trim the beginning to have accurate TA values, trim the end to have accurate target value"""
-
-    def trim_ends(self, begin_count, end_count):
-        self.train = self.train.iloc[begin_count:]
-        self.train = self.train.iloc[:-end_count]
-        print('Trim beginning: ' + str(begin_count) + '. Trim end: ' +
-              str(end_count) + '. Train size: ' + str(len(self.train)))
-
-    # ///////////////////////////////
-    # ////// FEATURE CREATION ///////
-    # ///////////////////////////////
-
-    def get_train_size(self, percent_split):
-        train_records_count = int(len(self.train) * percent_split)
-        print('Train size: ' + str(train_records_count) +
-              ' percent_split: ' + str(percent_split))
-        return train_records_count
-
-    def get_validation_indexes(self, train_size, df):
-        validation_indexes = list(range(train_size, len(df)))
-        print('Validation Index size: ' + str(len(validation_indexes)))
-        return validation_indexes
-
-    def apply_variable_types(self, df, cat_vars, contin_vars, dep):
-        dep_array = [] if dep is None else [dep]
-        df = df[cat_vars + contin_vars + dep_array].copy()
-        for v in cat_vars:
-            df[v] = df[v].astype('category').cat.as_ordered()
-        for v in contin_vars:
-            df[v] = df[v].astype('float32')
-        return df
-
-    # ///////////////////////////////
-    # //// FEATURE ENGINEERING //////
-    # ///////////////////////////////
-
-    def get_max_lookback(self, target, lookback):
-        return self.train[target].rolling(window=lookback, min_periods=1).max()
-
-    def get_min_lookback(self, target, lookback):
-        return self.train[target].rolling(window=lookback, min_periods=1).min()
-
-    def get_moving_average(self, target, lookback):
-        return self.train[target].rolling(window=lookback, min_periods=1).mean()
-
-    def get_max_lookahead(self, df, target, lookahead):
-        return df[target]             .iloc[::-1]             .rolling(window=lookahead, min_periods=1)             .max()             .iloc[::-1]
-
-    def get_last_lookahead(self, df, target, lookahead):
-        return df[target].shift(-lookahead)
-
-    def get_lookback(self, df, target, lookback):
-        return df[target].shift(lookback)
-
-    def add_historical_candles(self, df, lookback):
-        for i in range(1, lookback):
-            df[str(i) + 'Open'] = self.get_lookback(df,
-                                                    'Open', i).astype('float')
-            df[str(i) + 'High'] = self.get_lookback(df,
-                                                    'High', i).astype('float')
-            df[str(i) + 'Low'] = self.get_lookback(df,
-                                                   'Low', i).astype('float')
-            df[str(i) + 'Close'] = self.get_lookback(df,
-                                                     'Close', i).astype('float')
-            df[str(i) + 'Volume'] = self.get_lookback(df,
-                                                      'Volume', i).astype('float')
-
-    def add_ta(self):
-        self.train = add_all_ta_features(
-            self.train, "Open", "High", "Low", "Close", "Volume", fillna=True)
-        self.train['sma5'] = self.get_moving_average("Close", 5)
-        self.train['sma15'] = self.get_moving_average("Close", 15)
-        self.train['sma30'] = self.get_moving_average("Close", 30)
-        self.train['sma60'] = self.get_moving_average("Close", 60)
-        self.train['sma90'] = self.get_moving_average("Close", 90)
-        self.add_historical_candles(self.train, 30)
-        # rsi = self.train['momentum_rsi']
-        # self.train['rsi_category'] = rsi < 30
-
-    """ Set the target (dependent variable) by looking ahead in a certain time window and percent increase
-        to determine if the action should be a BUY or a SELL. BUY is true/1 SELL is false/0"""
-
-    def set_target(self, target, lookahead, percentIncrease):
-        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
-        self.train['action'] = max_lookahead > (
-            percentIncrease * self.train['Close'])
-#        self.train['max'] =max_in_lookahead_timeframe
-        self.train.action = self.train.action.astype(int)
-        buy_count = str(len(self.train[self.train.action == 1]))
-        sell_count = str(len(self.train[self.train.action == 0]))
-        print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
-
-    def set_target_hold(self, target, lookahead, percentIncrease, percentDecrease):
-        self.train['action'] = 0
-        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
-        self.train.loc[max_lookahead > percentDecrease *
-                       self.train['Close'], 'action'] = 1
-        self.train.loc[max_lookahead > percentIncrease *
-                       self.train['Close'], 'action'] = 2
-        self.train.action = self.train.action.astype(int)
-        sell_count = str(len(self.train[self.train.action == 0]))
-        hold_count = str(len(self.train[self.train.action == 1]))
-        buy_count = str(len(self.train[self.train.action == 2]))
-        print('Buy count: ' + buy_count + ' Sell count: ' +
-              sell_count + ' Hold count: ' + hold_count)
-
-    def set_target_hold_reg(self, target, lookahead, percentIncrease):
-        self.train['max_lookahead'] = 0
-        max_lookahead = self.get_max_lookahead(self.train, target, lookahead)
-        self.train['max_lookahead'] = max_lookahead
-        self.train.max_lookahead = self.train.max_lookahead.astype(np.float32)
-
-    def add_date_values(self):
-        add_datepart(self.train, 'Timestamp', drop=False)
-        self.train['hour'] = self.train['Timestamp'].dt.hour
-        self.train['minute'] = self.train['Timestamp'].dt.minute
-
-    def set_target_historical(self, target, lookback, percentIncrease):
-        max_in_lookback_timeframe = self.get_max_lookback(target, lookback)
-        self.train['action'] = max_in_lookback_timeframe > (
-            percentIncrease * self.train['Close'])
-        self.train.action = self.train.action.astype(int)
-        buy_count = str(len(self.train[self.train.action == 1]))
-        sell_count = str(len(self.train[self.train.action == 0]))
-        print('Buy count: ' + buy_count + ' Sell count: ' + sell_count)
-
-    def set_target_historical_hold(self, target, lookback, percentIncrease):
-        self.train['action'] = 0
-        max_lookback = self.get_max_lookback(target, lookback)
-        self.train.loc[max_lookback > self.train['Close'], 'action'] = 1
-
-        self.train.loc[max_lookback > percentIncrease *
-                       self.train['Close'], 'action'] = 2
-
-        self.train.action = self.train.action.astype(int)
-        sell_count = str(len(self.train[self.train.action == 0]))
-        hold_count = str(len(self.train[self.train.action == 1]))
-        buy_count = str(len(self.train[self.train.action == 2]))
-        print('Buy count: ' + buy_count + ' Sell count: ' +
-              sell_count + ' Hold count: ' + hold_count)
-
-    # ///////////////////////////////
-    # ///////// EVALUATION //////////
-    # ///////////////////////////////
-
-    def generate_net_profit_result(self, df, startAmount, totalBuys, totalSells):
-        startClose = df.Close.iloc[0]
-        endClose = df.Close.iloc[-1]
-        endBuyAmount = df.buyAmount.iloc[-1]
-        endSellAmount = df.sellAmount.iloc[-1]
-        endAmount = endBuyAmount if (
-            endBuyAmount > 0) else (endSellAmount * endClose)
-        buyAndHoldPercentIncrease = ((endClose - startClose)/startClose) * 100
-        percentIncrease = ((endAmount - startAmount)/startAmount) * 100
-        percentDifference = percentIncrease - buyAndHoldPercentIncrease
-
-        result = {
-            'startClose': startClose,
-            'endClose': endClose,
-            'startAmount': startAmount,
-            'endAmount': endAmount,
-            'buyAndHoldPercentIncrease': round(buyAndHoldPercentIncrease, 3),
-            'percentIncrease': round(percentIncrease, 3),
-            'percentDifference': round(percentDifference, 3),
-            'totalTrades': totalBuys + totalSells
-        }
-        return result
-
-    def calculate_accuracy_hold(self, df):
-        successful_predictions = df.loc[df.action == df.predicted]
-        total_accuracy = len(successful_predictions)/len(df)
-        total_sell_actions = df.loc[df.action == 0]
-        total_hold_actions = df.loc[df.action == 1]
-        total_buy_actions = df.loc[df.action == 2]
-        successful_sell_predictions = successful_predictions.loc[successful_predictions.action == 0]
-        successful_hold_predictions = successful_predictions.loc[successful_predictions.action == 1]
-        successful_buy_predictions = successful_predictions.loc[successful_predictions.action == 2]
-        sell_accuracy = len(successful_sell_predictions) /             len(total_sell_actions)
-        hold_accuracy = len(successful_hold_predictions) /             len(total_hold_actions)
-        buy_accuracy = len(successful_buy_predictions)/len(total_buy_actions)
-        f1Score = (buy_accuracy + sell_accuracy + hold_accuracy)/3
-        result = {
-            'F1Score': round(f1Score, 3),
-            'totalAccuracy': round(total_accuracy, 3),
-            'buyAccuracy': round(buy_accuracy, 3),
-            'sellAccuracy': round(sell_accuracy, 3),
-            'hold_accuracy': round(hold_accuracy, 3),
-            'totalSellActions': len(total_sell_actions),
-            'totalHoldActions': len(total_hold_actions),
-            'totalBuyActions': len(total_buy_actions),
-            'successfulBuyPredictions': len(successful_buy_predictions)
-        }
-        return result
-
-    def calculate_accuracy(self, df):
-        successful_predictions = df.loc[df.action == df.predicted]
-        total_accuracy = len(successful_predictions)/len(df)
-        total_buy_actions = df.loc[df.action == 1]
-        total_sell_actions = df.loc[df.action == 0]
-        successful_buy_predictions = successful_predictions.loc[successful_predictions.action == 1]
-        successful_sell_predictions = successful_predictions.loc[successful_predictions.action == 0]
-        buy_accuracy = len(successful_buy_predictions)/len(total_buy_actions)
-        sell_accuracy = (len(successful_sell_predictions) /
-                         len(total_sell_actions))
-        f1Score = (buy_accuracy + sell_accuracy)/2
-        result = {
-            'F1Score': round(f1Score, 3),
-            'totalAccuracy': round(total_accuracy, 3),
-            'buyAccuracy': round(buy_accuracy, 3),
-            'sellAccuracy': round(sell_accuracy, 3),
-            'totalBuyActions': len(total_buy_actions),
-            'successfulBuyPredictions': len(successful_buy_predictions)
-        }
-        return result
-
-    def calculate_net_profit(self, inputDf, startAmount, fee):
-        df = inputDf
-        df['buyAmount'] = 0
-        df['sellAmount'] = 0
-        totalBuys = 0
-        totalSells = 0
-        for index, row in df.iterrows():
-            prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
-            prevSellAmount = df.sellAmount.get(index - 1, np.nan)
-            predicted = row.predicted
-            if index == df.index[0]:
-                df.loc[index, 'buyAmount'] = startAmount
-            elif predicted == 1 and prevBuyAmount > 0:
-                # BUY
-                base_sell = prevBuyAmount/row.Close
-                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
-                totalBuys += 1
-            elif predicted == 1 and prevBuyAmount == 0:
-                df.loc[index, 'sellAmount'] = prevSellAmount
-            elif predicted == 0 and prevSellAmount > 0:
-                # SELL
-                base_buy = prevSellAmount*row.Close
-                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
-                totalSells += 1
-            elif predicted == 0 and prevSellAmount == 0:
-                df.loc[index, 'buyAmount'] = prevBuyAmount
-            else:
-                raise ValueError(
-                    'This is weird, invalid predicted value: ' + str(predicted) + ' prevSellAmount: ' +
-                    str(prevSellAmount) + ' prevBuyAmount: ' + str(prevBuyAmount))
-        result = self.generate_net_profit_result(
-            df, startAmount, totalBuys, totalSells)
-        self.net_profit_df = df
-        self.result = result
-        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
-
-    def calculate_net_profit_hold(self, inputDf, startAmount, fee):
-        df = inputDf
-        df['buyAmount'] = 0
-        df['sellAmount'] = 0
-        totalBuys = 0
-        totalSells = 0
-        for index, row in df.iterrows():
-            prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
-            prevSellAmount = df.sellAmount.get(index - 1, np.nan)
-            predicted = row.predicted
-            if index == df.index[0]:
-                df.loc[index, 'buyAmount'] = startAmount
-            elif predicted == 2 and prevBuyAmount > 0:
-                # BUY
-                base_sell = prevBuyAmount / row.Close
-                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
-                totalBuys += 1
-            elif predicted == 2 and prevBuyAmount == 0:
-                df.loc[index, 'sellAmount'] = prevSellAmount
-            elif predicted == 0 and prevSellAmount > 0:
-                # SELL
-                base_buy = prevSellAmount * row.Close
-                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
-                totalSells += 1
-            elif predicted == 0 and prevSellAmount == 0:
-                df.loc[index, 'buyAmount'] = prevBuyAmount
-            elif predicted == 1:
-                # HOLD
-                df.loc[index, 'buyAmount'] = prevBuyAmount
-                df.loc[index, 'sellAmount'] = prevSellAmount
-            else:
-                raise ValueError(
-                    'This is weird, invalid predicted value: ' + str(predicted))
-
-        result = self.generate_net_profit_result(
-            df, startAmount, totalBuys, totalSells)
-        self.net_profit_df = df
-        self.result = result
-        # print(js.dumps(result, sort_keys=False, indent=4, separators=(',', ': ')))
-
-    def calculate_net_profit_hold_reg(self, inputDf, startAmount, fee, percentIncrease):
-        df = inputDf
-        df['buyAmount'] = 0
-        df['sellAmount'] = 0
-        totalBuys = 0
-        totalSells = 0
-        for index, row in df.iterrows():
-            prevBuyAmount = df.buyAmount.get(index - 1, np.nan)
-            prevSellAmount = df.sellAmount.get(index - 1, np.nan)
-            predicted = row.predicted
-            threshold = percentIncrease * row.Close
-            if index == df.index[0]:
-                df.loc[index, 'buyAmount'] = startAmount
-            elif predicted >= threshold and prevBuyAmount > 0:
-                # BUY
-                base_sell = prevBuyAmount / row.Close
-                df.loc[index, 'sellAmount'] = base_sell - (base_sell * fee)
-                totalBuys += 1
-            elif predicted >= threshold and prevBuyAmount == 0:
-                df.loc[index, 'sellAmount'] = prevSellAmount
-            elif predicted >= row.Close:
-                # HOLD
-                df.loc[index, 'buyAmount'] = prevBuyAmount
-                df.loc[index, 'sellAmount'] = prevSellAmount
-            elif predicted < row.Close and prevSellAmount > 0:
-                # SELL
-                base_buy = prevSellAmount * row.Close
-                df.loc[index, 'buyAmount'] = base_buy - (base_buy*fee)
-                totalSells += 1
-            elif predicted < row.Close and prevSellAmount == 0:
-                df.loc[index, 'buyAmount'] = prevBuyAmount
-            else:
-                raise ValueError(
-                    'This is weird, invalid predicted value: ' + str(predicted) + ' Close: ' + str(row.Close))
-
-        result = self.generate_net_profit_result(
-            df, startAmount, totalBuys, totalSells)
-        self.net_profit_df = df
-        self.result = result
-
-    def confusion_matrix(self, actual, predicted, target_names, target):
-        print(classification_report(actual, predicted, target_names=target_names))
-        cm = confusion_matrix(actual, predicted)
-        plot_confusion_matrix(cm, target)
-
-    # ///////////////////////////////
-    # /////////// UTIL //////////////
-    # ///////////////////////////////
-
-    def save_to_feather(self, path):
-        self.train.reset_index(inplace=True)
-        self.train.to_feather(f'{path}historical_parsed')
-
-    def read_from_feather(self, path):
-        self.train = pd.read_feather(f'{path}historical_parsed')
-        self.set_date_as_index()
-
-    """ usage conflateTimeFrame(df, '5T') """
-
-    def conflate_time_frame(self, df, timeFrame):
-        ohlc_dict = {
-            'Open': 'first',
-            'High': 'max',
-            'Low': 'min',
-            'Close': 'last',
-            'Volume': 'sum'
-        }
-        return df.resample(timeFrame).agg(ohlc_dict)
-
-    def plot_profit(self, df):
-        df.reset_index(inplace=True)
-        df.plot(
-            x='Timestamp',
-            y=['Close', 'buyAmount'],
-            style='o',
-            figsize=(10, 5),
-            grid=True)
-
-
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
-
-    print(cm)
-
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.tight_layout()
-
-
 # ## Config
 # 
 
-# In[75]:
+# In[2]:
 
 
 from fastai.structured import *
@@ -518,8 +24,15 @@ from ta import *
 from IPython.display import HTML
 from IPython.core.display import display
 
+import os
+import sys
+module_path = os.path.abspath(os.path.join('lib/predictor'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+from stockPredictor import StockPredictor 
 
-# In[76]:
+
+# In[3]:
 
 
 pd.set_option('display.max_columns', 100)
@@ -539,7 +52,7 @@ dep = 'action'
 PATH='data/stock/'
 
 
-# In[77]:
+# In[4]:
 
 
 cat_vars = ['TimestampYear', 'TimestampMonth', 'TimestampWeek', 'TimestampDay', 'hour','minute', 'TimestampDayofweek',
@@ -577,7 +90,7 @@ len(cat_vars),len(contin_vars)
 
 # ## Create datasets
 
-# In[78]:
+# In[5]:
 
 
 table_names = [
@@ -590,25 +103,25 @@ table_names = [
 ]
 
 
-# In[79]:
+# In[6]:
 
 
 tables = [pd.read_csv(f'{PATH}{fname}.csv', low_memory=False) for fname in table_names]
 
 
-# In[80]:
+# In[7]:
 
 
 for t in tables: display(t.head())
 
 
-# In[81]:
+# In[8]:
 
 
 train= tables[0]
 
 
-# In[82]:
+# In[9]:
 
 
 # train = train.head(1700000)
@@ -618,7 +131,7 @@ p.sample_train(recordsCount)
 
 # ## Data Cleaning
 
-# In[83]:
+# In[10]:
 
 
 p.set_date_as_index_unix()
@@ -630,7 +143,7 @@ p.train.head()
 
 # ## Join Bitstamp
 
-# In[84]:
+# In[11]:
 
 
 # bitstamp= tables[1].tail(recordsCount)
@@ -643,7 +156,7 @@ p.train.head()
 # p.train = pd.concat([bitstampExtract, p.train], axis=1)
 
 
-# In[85]:
+# In[12]:
 
 
 # valpred = valpred.reset_index(drop=True)
@@ -654,7 +167,7 @@ p.train.head()
 
 # ## Feature Engineering
 
-# In[86]:
+# In[13]:
 
 
 # add technical analysis
@@ -662,20 +175,20 @@ p.add_ta()
 p.clean_train()
 
 
-# In[87]:
+# In[14]:
 
 
 p.set_target('Close',lookahead, percentIncrease)
 
 
-# In[88]:
+# In[15]:
 
 
 p.add_date_values()
 p.trim_ends(100,100)
 
 
-# In[89]:
+# In[16]:
 
 
 # p.train.to_csv(f'{PATH}btc_historical_parsed.csv', sep=',', encoding='utf-8')
@@ -686,19 +199,19 @@ p.train
 
 # ## Split validation and test sets
 
-# In[90]:
+# In[17]:
 
 
 p.split_test_train(test_ratio)
 
 
-# In[91]:
+# In[18]:
 
 
 # p.train.head()
 
 
-# In[92]:
+# In[19]:
 
 
 p.train.tail(50).T.head(100)
@@ -706,7 +219,7 @@ p.train.tail(50).T.head(100)
 
 # ## Create features
 
-# In[93]:
+# In[20]:
 
 
 p.train = p.apply_variable_types(p.train, cat_vars, contin_vars, dep)
@@ -714,13 +227,13 @@ p.test = p.apply_variable_types(p.test, cat_vars, contin_vars, dep)
 apply_cats(p.test, p.train)
 
 
-# In[94]:
+# In[21]:
 
 
 df, y, nas, mapper = proc_df(p.train, dep, do_scale=True)
 
 
-# In[95]:
+# In[22]:
 
 
 df_test, _, nas, mapper = proc_df(p.test, dep, do_scale=True, mapper=mapper, na_dict=nas)
@@ -728,13 +241,13 @@ nas={}
 # p.train.head(30).T.head(70)
 
 
-# In[96]:
+# In[23]:
 
 
 df.head(2)
 
 
-# In[97]:
+# In[24]:
 
 
 df_test.head(2)
@@ -742,7 +255,7 @@ df_test.head(2)
 
 # Rake the last x% of rows as our validation set.
 
-# In[98]:
+# In[25]:
 
 
 train_size = p.get_train_size(train_ratio)
@@ -753,7 +266,7 @@ val_idx = p.get_validation_indexes(train_size, df)
 
 # We can create a ModelData object directly from our data frame. Is_Reg is set to False to turn this into a classification problem (from a regression).
 
-# In[99]:
+# In[26]:
 
 
 md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_flds=cat_vars, bs=512,
@@ -762,7 +275,7 @@ md = ColumnarModelData.from_data_frame(PATH, val_idx, df, y.astype('int'), cat_f
 
 # Some categorical variables have a lot more levels than others.
 
-# In[100]:
+# In[27]:
 
 
 cat_sz = [(c, len(p.train[c].cat.categories)+1) for c in cat_vars]
@@ -770,7 +283,7 @@ emb_szs = [(c, min(50, (c+1)//2)) for _,c in cat_sz]
 cont_size = len(df.columns)-len(cat_vars)
 
 
-# In[101]:
+# In[28]:
 
 
 # m = md.get_learner(emb_szs, cont_size,dropout, 2, [100,50], [0.03,0.06],None,True)
@@ -783,14 +296,14 @@ from torch.nn import functional as F
 m.crit = F.cross_entropy
 
 
-# In[102]:
+# In[29]:
 
 
 m.lr_find()
 m.sched.plot(10)
 
 
-# In[103]:
+# In[30]:
 
 
 # This is how the code looks in the 'metrics.py' in fastai library
@@ -800,31 +313,31 @@ def accuracy(preds, targs):
     return (preds==targs).float().mean()
 
 
-# In[104]:
+# In[31]:
 
 
 m.fit(lr, 3, metrics=[accuracy])
 
 
-# In[105]:
+# In[32]:
 
 
 m.fit(lr, 5, cycle_len=1, metrics=[accuracy])
 
 
-# In[106]:
+# In[33]:
 
 
 # m.fit(lr, 3, cycle_len=4, cycle_mult=2 , metrics=[accuracy])
 
 
-# In[107]:
+# In[34]:
 
 
 m.save(modelName)
 
 
-# In[108]:
+# In[35]:
 
 
 m.load(modelName)
@@ -832,13 +345,13 @@ m.load(modelName)
 
 # ## Validation
 
-# In[109]:
+# In[36]:
 
 
 (x,yl)=m.predict_with_targs()
 
 
-# In[110]:
+# In[37]:
 
 
 val = p.train.iloc[val_idx]
@@ -854,13 +367,13 @@ valpred
 
 # Calculate the percent accuracy on the validation set
 
-# In[111]:
+# In[38]:
 
 
 p.calculate_accuracy(valpred)
 
 
-# In[112]:
+# In[39]:
 
 
 # from sklearn.metrics import classification_report
@@ -869,20 +382,20 @@ p.calculate_accuracy(valpred)
 #                             target_names= ['0', '1']))
 
 
-# In[113]:
+# In[40]:
 
 
 p.calculate_net_profit(valpred, 15000, 0)
 p.result
 
 
-# In[114]:
+# In[41]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[115]:
+# In[42]:
 
 
 p.net_profit_df
@@ -890,13 +403,13 @@ p.net_profit_df
 
 # ## Test
 
-# In[116]:
+# In[43]:
 
 
 np.argmax(m.predict(True), axis =1)
 
 
-# In[117]:
+# In[44]:
 
 
 testPred = pd.DataFrame({
@@ -908,32 +421,32 @@ testPred = pd.DataFrame({
 testPred.head(10)
 
 
-# In[118]:
+# In[45]:
 
 
 p.calculate_accuracy(testPred)
 
 
-# In[119]:
+# In[46]:
 
 
 p.calculate_net_profit(testPred, 15000, 0)
 p.result
 
 
-# In[120]:
+# In[47]:
 
 
 p.net_profit_df
 
 
-# In[121]:
+# In[48]:
 
 
 p.plot_profit(p.net_profit_df)
 
 
-# In[122]:
+# In[49]:
 
 
 p.confusion_matrix(testPred.action,testPred.predicted, ['0', '1'], [0, 1])
@@ -942,7 +455,7 @@ p.confusion_matrix(testPred.action,testPred.predicted, ['0', '1'], [0, 1])
 # ## Single Prediction
 # 
 
-# In[123]:
+# In[50]:
 
 
 df_row = df_test.tail(10) # last row
@@ -953,41 +466,49 @@ prediciton = m.predict_array(df_row[cat_vars], df_row[contin_vars])
 # ## Random Forrest
 # 
 
-# In[133]:
+# In[51]:
 
 
-from sklearn.ensemble import RandomForestRegressor
-mrf = RandomForestRegressor(n_estimators=40, max_features=0.99, min_samples_leaf=2,
+from sklearn.ensemble import RandomForestClassifier
+# from sklearn.model_selection import GridSearchCV
+# mrf = RandomForestClassifier()
+# params_rf = {'n_estimators': [ 100, 200]}
+# rf_gs = GridSearchCV(mrf, params_rf, cv=5)
+# rf_gs.fit(df.values, y);
+# mrf = rf_gs.best_estimator_
+
+mrf = RandomForestClassifier(n_estimators=150, max_features=0.99, min_samples_leaf=2,
                           n_jobs=-1, oob_score=True)
 mrf.fit(df.values, y);
+mrf
 
 
-# In[140]:
+# In[52]:
 
 
 mrf.score(df_test.values,p.test[dep])
 
 
-# In[142]:
+# In[53]:
 
 
 preds = mrf.predict(df_test.values)
 
 
-# In[135]:
+# In[54]:
 
 
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
+p.confusion_matrix(p.test[dep], preds, ['0', '1'], [0, 1])
 
 
-# In[143]:
+# In[55]:
 
 
-testPred.predicted = PredtoClass(preds)
+testPred.predicted = preds
 p.calculate_accuracy(testPred)
 
 
-# In[145]:
+# In[56]:
 
 
 p.calculate_net_profit(testPred, 15000, 0)
@@ -997,42 +518,72 @@ p.result
 # ## AdaBoost
 # 
 
-# In[136]:
+# In[57]:
 
 
 from sklearn.ensemble import AdaBoostClassifier
-ada = AdaBoostClassifier(random_state=1)
+ada = AdaBoostClassifier(random_state=1, learning_rate=0.5)
 ada.fit(df.values, y)
 
 
-# In[137]:
+# In[58]:
 
 
 ada.score(df_test.values,p.test[dep])
 
 
-# In[148]:
+# In[59]:
 
 
 preds = ada.predict(df_test.values)
+testPred.predicted = preds
 
 
-# In[146]:
+# In[60]:
 
 
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
+p.confusion_matrix(p.test[dep], preds, ['0', '1'], [0, 1])
 
 
-# In[149]:
+# In[61]:
 
 
-testPred.predicted = PredtoClass(preds)
 p.calculate_accuracy(testPred)
 
 
-# In[150]:
+# In[62]:
 
 
+p.calculate_net_profit(testPred, 15000, 0)
+p.result
+
+
+# ## XGBoost
+# 
+# 
+
+# In[63]:
+
+
+import xgboost as xgb
+xg_boost=xgb.XGBClassifier(random_state=1,learning_rate=0.01)
+#fit the model to the training data
+xg_boost.fit(df.values, y)
+
+
+# In[64]:
+
+
+xg_boost.score(df_test.values,p.test[dep])
+
+
+# In[65]:
+
+
+preds = xg_boost.predict(df_test.values)
+p.confusion_matrix(p.test[dep], preds, ['0', '1'], [0, 1])
+testPred.predicted = preds
+p.calculate_accuracy(testPred)
 p.calculate_net_profit(testPred, 15000, 0)
 p.result
 
@@ -1040,18 +591,18 @@ p.result
 # ## Ensemble
 # 
 
-# In[158]:
+# In[66]:
 
 
 from sklearn.ensemble import VotingClassifier
 #create a dictionary of our models
 # , ('rnn', m)
-estimators=[('ada', ada), ('rf', mrf)]
+estimators=[('ada', ada), ('rf', mrf), ('xg_boost', xg_boost)]
 #create our voting classifier, inputting our models
-ensemble = VotingClassifier(estimators, voting='hard')
+ensemble = VotingClassifier(estimators, voting='soft')
 
 
-# In[ ]:
+# In[67]:
 
 
 #fit model to training data
@@ -1060,13 +611,37 @@ ensemble.fit(df.values, y)
 ensemble.score(df_test.values,p.test[dep])
 
 
-# In[ ]:
+# In[68]:
 
 
-preds = ada.predict(df_test.values)
-p.confusion_matrix(p.test[dep], PredtoClass(preds), ['0', '1'], [0, 1])
-testPred.predicted = PredtoClass(preds)
+preds = ensemble.predict(df_test.values)
+p.confusion_matrix(p.test[dep], preds, ['0', '1'], [0, 1])
+testPred.predicted = preds
 p.calculate_accuracy(testPred)
 p.calculate_net_profit(testPred, 15000, 0)
 p.result
+
+
+# In[69]:
+
+
+preds
+
+
+# In[70]:
+
+
+mrf.predict(df_test.values)
+
+
+# In[71]:
+
+
+ada.predict(df_test.values)
+
+
+# In[ ]:
+
+
+
 
