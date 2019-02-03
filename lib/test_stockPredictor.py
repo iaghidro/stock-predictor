@@ -2,7 +2,7 @@
 # from fastai.column_data import *
 import numpy as np
 import pandas as pd
-from stockPredictor import StockPredictor
+from stockPredictor.stockPredictor import StockPredictor
 
 complete_train_data = {
     'Close': [3, 5, 6, 6, 4],
