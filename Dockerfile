@@ -1,5 +1,5 @@
 
-FROM iaghidro/base:latest
+FROM iaghidro/machine-learning
 
 COPY ./ /app
 
