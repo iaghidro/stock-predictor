@@ -16,3 +16,5 @@ data/*
 notebook-files/.ipynb_checkpoints/*
 inference-data/**/*
 package-lock.json
+/**/*-checkpoint.ipynb
+/**/*.pyc
