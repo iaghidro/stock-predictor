@@ -3,7 +3,15 @@ const dataFetcher = require("../lib/dataFetcher/DataFetcher");
 var execute = function() {
   console.log(`@@@@@@@@@ Start! @@@@@@@@@`);
 
-  const pairs = ["ETH-USD", "BCH-USD"];
+  const pairs = [
+    "ETH-USD",
+    "BCH-USD",
+    "LTC-USD",
+    "BTC-USD",
+    "XLM-USD",
+    "EOS-USD",
+    "ETC-USD"
+  ];
   const exchange = "coinbase";
 
   dataFetcher
