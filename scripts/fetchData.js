@@ -3,12 +3,12 @@ const dataFetcher = require("../lib/dataFetcher/DataFetcher");
 var execute = function() {
   console.log(`@@@@@@@@@ Start! @@@@@@@@@`);
 
-  // const pairs = ["ETH-USD"];
-  const pairs = ["ETH-USD", "EOS-USD", "LTC-USD", "BTC-USD"];
+  const pairs = ["ETH-USD", "BCH-USD"];
+  const exchange = "coinbase";
 
   dataFetcher
-    .fetchMulti(pairs)
-    .then(processed => console.log(processed))
+    .fetchMulti(pairs, exchange)
+    .then(() => console.log("FINISHED"))
     .catch(err => {
       console.log("ERR");
       console.log(err);
