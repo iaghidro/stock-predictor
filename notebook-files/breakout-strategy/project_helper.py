@@ -197,7 +197,7 @@ def plot_signal_histograms(signal_list, title, subplot_titles):
     signal_series_list = [signal.stack() for signal in signal_list]
     all_values = pd.concat(signal_series_list)
     x_range = [all_values.min(), all_values.max()]
-    y_range = [0, 1500]
+    y_range = [0, 50]
     config = helper.generate_config()
     colors = Color(helper.color_scheme['low_value']).range_to(Color(helper.color_scheme['high_value']), len(signal_series_list))
 
@@ -220,7 +220,7 @@ def plot_signal_to_normal_histograms(signal_list, title, subplot_titles):
     signal_series_list = [signal.stack() for signal in signal_list]
     all_values = pd.concat(signal_series_list)
     x_range = [all_values.min(), all_values.max()]
-    y_range = [0, 1500]
+    y_range = [0, 20]
     config = helper.generate_config()
 
     fig = py.tools.make_subplots(rows=1, cols=len(signal_series_list), subplot_titles=subplot_titles, print_grid=False)
