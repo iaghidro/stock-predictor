@@ -8,7 +8,7 @@ var execute = function() {
     "BCH-USD",
     "LTC-USD",
     "BTC-USD",
-    "XLM-USD",
+    "XRP-USD",
     "EOS-USD",
     "ETC-USD"
   ];
