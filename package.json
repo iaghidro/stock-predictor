@@ -10,6 +10,7 @@
   "contributors": [],
   "scripts": {
     "test": "mocha --recursive",
+    "test:watch": "mocha -w --recursive --reporter min",
     "test:grep": "mocha --recursive -g",
     "test:p": "cd /app/lib && py.test -s -vv",
     "trainModel": "node scripts/trainModel.js",

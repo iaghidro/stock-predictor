@@ -1,4 +1,4 @@
-const dataFetcher = require("../lib/dataFetcher/DataFetcher");
+const DataFetcher = require("../lib/dataFetcher/DataFetcher");
 
 var execute = function() {
   console.log(`@@@@@@@@@ Start! @@@@@@@@@`);
@@ -13,9 +13,10 @@ var execute = function() {
     "ETC-USD"
   ];
   const exchange = "coinbase";
-
+  const lookback = 300;
+  const dataFetcher = new DataFetcher();
   dataFetcher
-    .fetchMulti(pairs, exchange)
+    .fetchMulti(pairs, lookback, exchange)
     .then(() => console.log("FINISHED"))
     .catch(err => {
       console.log("ERR");
