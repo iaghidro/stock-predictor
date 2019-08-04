@@ -13,7 +13,7 @@ var execute = function() {
     "ETC-USD"
   ];
   const exchange = "coinbase";
-  const lookback = 300;
+  const lookback = 600;
   const dataFetcher = new DataFetcher();
   dataFetcher
     .fetchMulti(pairs, lookback, exchange)
