@@ -21,15 +21,15 @@ describe("lib::DataFetcher", function() {
     sandbox.restore();
     done();
   });
-  describe.only("fetch:CoinbasePro", function() {
+  describe("fetch:CoinbasePro", function() {
     it("should successfully fetch for given currency pair, exchange, and lookback", function(done) {
       const dataFetcher = new DataFetcher();
       const lookback = 5;
       dataFetcher
-        .fetch("BTC-USD", lookback, 0)
+        .fetchSinglePair("BTC-USD", lookback, 0)
         .then(candles => {
           console.log("success");
-          console.log(candles);
+          // console.log(candles);
 
           expect(candles.length).to.equal(lookback);
           expect(candles[0].Symbol).to.equal("BTC-USD");
