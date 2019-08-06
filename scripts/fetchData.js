@@ -9,11 +9,11 @@ var execute = function() {
     "LTC-USD",
     "BTC-USD",
     "XRP-USD",
-    "EOS-USD",
-    "ETC-USD"
+    // "EOS-USD",
+    // "ETC-USD"
   ];
   const exchange = "coinbase";
-  const lookback = 600;
+  const lookback = 1200;
   const dataFetcher = new DataFetcher();
   dataFetcher
     .fetchMulti(pairs, lookback, exchange)
