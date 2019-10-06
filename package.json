@@ -17,7 +17,8 @@
     "predict": "node scripts/predict.js",
     "playground": "python3 playground/playground.py",
     "fetch:data": "node scripts/fetchData.js",
-    "jupyter": "jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root"
+    "install:dependencies": "apt-get install xvfb -y",
+    "jupyter": "xvfb-run -s '-screen 0 1400x900x24'  jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root"
   },
   "dependencies": {
     "async": "2.5.0",

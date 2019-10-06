@@ -18,3 +18,4 @@ inference-data/**/*
 package-lock.json
 /**/*-checkpoint.ipynb
 /**/*.pyc
+gym-results/**/**
