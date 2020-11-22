@@ -106,6 +106,8 @@ class StockPredictor:
     # ///////////////////////////////
 
     def get_max_lookback(self, target, lookback):
+        # //todo: should not include current day
+        # return self.train[target].shift(1)rolling(window=lookback, min_periods=1).max()
         return self.train[target].rolling(window=lookback, min_periods=1).max()
 
     def get_min_lookback(self, target, lookback):
